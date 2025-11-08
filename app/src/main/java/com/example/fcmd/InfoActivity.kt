@@ -1,6 +1,9 @@
 package com.example.fcmd
 
 import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fcmd.databinding.ActivityInfoBinding
 
@@ -8,6 +11,7 @@ class InfoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityInfoBinding
     private lateinit var audioCapabilities: AudioCapabilities
+    private lateinit var themeManager: ThemeManager
 
     companion object {
         const val EXTRA_TONE_FREQUENCIES = "tone_frequencies"
@@ -24,16 +28,78 @@ class InfoActivity : AppCompatActivity() {
 
         // Set up action bar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Hardware Information"
+        supportActionBar?.title = "Settings & Information"
 
-        // Initialize audio capabilities
+        // Initialize managers
         audioCapabilities = AudioCapabilities(this)
+        themeManager = ThemeManager.getInstance(this)
+
+        // Set up theme selector
+        setupThemeSelector()
 
         // Show loading message
         binding.hardwareInfoText.text = "Loading hardware information..."
 
         // Load hardware info in background
         loadHardwareInfo()
+    }
+
+    private fun setupThemeSelector() {
+        val themes = themeManager.getAvailableThemes()
+        val themeNames = themes.map { "${it.theme.name} - ${it.theme.description}" }
+
+        // Set up spinner adapter
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            themeNames
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.themeSpinner.adapter = adapter
+
+        // Set current selection
+        val currentTheme = themeManager.getCurrentTheme()
+        val currentIndex = themes.indexOfFirst {
+            it.theme::class == currentTheme::class
+        }
+        if (currentIndex >= 0) {
+            binding.themeSpinner.setSelection(currentIndex)
+        }
+
+        // Update theme info display
+        updateThemeInfo(currentTheme)
+
+        // Handle theme selection
+        binding.themeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val selectedTheme = themes[position]
+                if (!selectedTheme.isActive) {
+                    themeManager.setTheme(selectedTheme.type)
+                    updateThemeInfo(selectedTheme.theme)
+
+                    // Show confirmation
+                    android.widget.Toast.makeText(
+                        this@InfoActivity,
+                        "Theme changed to ${selectedTheme.theme.name}",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
+        }
+    }
+
+    private fun updateThemeInfo(theme: UITheme) {
+        binding.currentThemeName.text = "Current: ${theme.name}"
+        binding.themeDescription.text = theme.description
     }
 
     private fun loadHardwareInfo() {
