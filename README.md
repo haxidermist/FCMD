@@ -383,7 +383,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Screenshots
 
-> **Note**: Add screenshots of the app in action here
+![FCMD App Screenshot](screenshot.png)
+
+*FCMD in action showing real-time IQ demodulation, VDI discrimination, and waveform display*
 
 ## FAQ
 
