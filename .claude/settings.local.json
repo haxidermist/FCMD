@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(gradlew.bat clean:*)",
-      "Bash(./gradlew.bat clean:*)"
+      "Bash(./gradlew.bat clean:*)",
+      "Bash(.gradlew.bat assembleDebug)",
+      "Bash(./gradlew.bat assembleDebug:*)",
+      "Bash(gradlew.bat assembleDebug:*)"
     ],
     "deny": [],
     "ask": []

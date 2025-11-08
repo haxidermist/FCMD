@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VDI Phase Slope Process Diagram</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: white;
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #000;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 40px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 3px solid #333;
+            border-radius: 10px;
+            background: #f5f5f5;
+        }
+        .section-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+            background: #4CAF50;
+            padding: 12px;
+            border-radius: 6px;
+            color: white;
+        }
+        .box {
+            border: 2px solid #000;
+            padding: 18px;
+            margin: 15px auto;
+            text-align: center;
+            border-radius: 8px;
+            background: #fff;
+            font-weight: bold;
+            max-width: 400px;
+        }
+        .box.input {
+            background: #e3f2fd;
+            border-color: #1976d2;
+        }
+        .box.process {
+            background: #fff3e0;
+            border-color: #f57c00;
+        }
+        .box.output {
+            background: #e8f5e9;
+            border-color: #388e3c;
+        }
+        .arrow {
+            text-align: center;
+            font-size: 28px;
+            margin: 12px 0;
+            color: #000;
+        }
+        .label {
+            text-align: center;
+            font-style: italic;
+            color: #555;
+            margin: 10px 0;
+            font-size: 15px;
+        }
+        .flow-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0;
+            gap: 30px;
+        }
+        .flow-column {
+            flex: 1;
+        }
+        .formula {
+            background: #f0f0f0;
+            border: 2px dashed #666;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-width: 600px;
+        }
+        .example-container {
+            display: flex;
+            gap: 30px;
+            margin: 25px 0;
+        }
+        .example {
+            flex: 1;
+            padding: 20px;
+            border-radius: 10px;
+            border: 3px solid;
+        }
+        .example.ferrous {
+            background: #ffebee;
+            border-color: #c62828;
+        }
+        .example.nonferrous {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+        }
+        .example h3 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+        .graph {
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            height: 200px;
+            position: relative;
+        }
+        .graph-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .axis {
+            position: absolute;
+            background: #333;
+        }
+        .axis.x {
+            bottom: 30px;
+            left: 50px;
+            right: 30px;
+            height: 2px;
+        }
+        .axis.y {
+            left: 50px;
+            top: 20px;
+            bottom: 30px;
+            width: 2px;
+        }
+        .axis-label {
+            position: absolute;
+            font-size: 12px;
+        }
+        .line {
+            position: absolute;
+            height: 3px;
+            transform-origin: left center;
+        }
+        .line.ferrous {
+            background: #c62828;
+        }
+        .line.nonferrous {
+            background: #2e7d32;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 2px solid #333;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .vdi-scale {
+            height: 60px;
+            background: linear-gradient(to right,
+                #c62828 0%,
+                #ff5722 15%,
+                #ff9800 30%,
+                #ffc107 45%,
+                #ffeb3b 50%,
+                #cddc39 60%,
+                #8bc34a 70%,
+                #4caf50 85%,
+                #009688 100%);
+            border: 2px solid #333;
+            border-radius: 8px;
+            position: relative;
+            margin: 20px 0;
+        }
+        .vdi-marker {
+            position: absolute;
+            top: -25px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .vdi-label {
+            position: absolute;
+            bottom: -25px;
+            font-size: 11px;
+        }
+        .code-ref {
+            background: #e1f5fe;
+            border: 2px solid #0277bd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">VDI PHASE SLOPE DISCRIMINATION PROCESS</div>
+    <div class="subtitle">Multi-Frequency Analysis for Metal Target Identification</div>
+
+    <!-- STEP 1: INPUT -->
+    <div class="section">
+        <div class="section-title">STEP 1: INPUT - Multi-Frequency IQ Analysis</div>
+
+        <div class="box input">Multi-Tone IQ Demodulation<br>
+            (1-24 frequencies, 1000-20000 Hz)</div>
+
+        <div class="arrow">↓</div>
+
+        <div class="box input">For each frequency:<br>
+            • Amplitude (signal strength)<br>
+            • Phase (degrees)<br>
+            • I/Q components</div>
+
+        <div class="code-ref">VDICalculator.kt:53 - calculateVDI(analysis: List&lt;ToneAnalysis&gt;)</div>
+    </div>
+
+    <!-- STEP 2: PHASE SLOPE CALCULATION -->
+    <div class="section">
+        <div class="section-title">STEP 2: PHASE SLOPE CALCULATION</div>
+
+        <div class="formula">
+            <strong>Phase Slope Formula:</strong><br><br>
+            phaseSlope = (phase_highest_freq - phase_lowest_freq) / (freq_diff / 1000)<br><br>
+            Units: degrees per kHz
+        </div>
+
+        <div class="code-ref">VDICalculator.kt:84 - calculatePhaseSlope()</div>
+
+        <div class="example-container">
+            <div class="example ferrous">
+                <h3>FERROUS Example (Iron Nail)</h3>
+                <div class="graph">
+                    <div class="graph-title">Phase vs Frequency</div>
+                    <div class="axis x"></div>
+                    <div class="axis y"></div>
+                    <div class="axis-label" style="bottom: 5px; left: 45%; transform: translateX(-50%);">Frequency (kHz)</div>
+                    <div class="axis-label" style="left: 5px; top: 40%; transform: rotate(-90deg) translateX(-50%);">Phase (°)</div>
+
+                    <!-- Simulated steep negative slope -->
+                    <svg style="position: absolute; left: 50px; top: 20px; width: calc(100% - 80px); height: calc(100% - 50px);">
+                        <line x1="0" y1="30" x2="100%" y2="150" stroke="#c62828" stroke-width="4"/>
+                        <circle cx="0" cy="30" r="5" fill="#c62828"/>
+                        <circle cx="100%" cy="150" r="5" fill="#c62828"/>
+                    </svg>
+                </div>
+                <strong>Phase Slope: -8.5 deg/kHz</strong><br>
+                Freq: 1 kHz → Phase: +30°<br>
+                Freq: 20 kHz → Phase: -130°<br>
+                Slope = (-130 - 30) / 19 = <strong>-8.4 deg/kHz</strong>
+            </div>
+
+            <div class="example nonferrous">
+                <h3>NON-FERROUS Example (Copper Coin)</h3>
+                <div class="graph">
+                    <div class="graph-title">Phase vs Frequency</div>
+                    <div class="axis x"></div>
+                    <div class="axis y"></div>
+                    <div class="axis-label" style="bottom: 5px; left: 45%; transform: translateX(-50%);">Frequency (kHz)</div>
+                    <div class="axis-label" style="left: 5px; top: 40%; transform: rotate(-90deg) translateX(-50%);">Phase (°)</div>
+
+                    <!-- Simulated flat slope -->
+                    <svg style="position: absolute; left: 50px; top: 20px; width: calc(100% - 80px); height: calc(100% - 50px);">
+                        <line x1="0" y1="90" x2="100%" y2="80" stroke="#2e7d32" stroke-width="4"/>
+                        <circle cx="0" cy="90" r="5" fill="#2e7d32"/>
+                        <circle cx="100%" cy="80" r="5" fill="#2e7d32"/>
+                    </svg>
+                </div>
+                <strong>Phase Slope: -0.5 deg/kHz</strong><br>
+                Freq: 1 kHz → Phase: +10°<br>
+                Freq: 20 kHz → Phase: +0°<br>
+                Slope = (0 - 10) / 19 = <strong>-0.5 deg/kHz</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 3: CONDUCTIVITY INDEX -->
+    <div class="section">
+        <div class="section-title">STEP 3: CONDUCTIVITY INDEX CALCULATION</div>
+
+        <div class="formula">
+            <strong>Conductivity Index Formula:</strong><br><br>
+            lowFreqAmp = average(first 1/3 of frequencies)<br>
+            highFreqAmp = average(last 1/3 of frequencies)<br><br>
+            conductivityIndex = (highFreqAmp / lowFreqAmp) / 2.0<br><br>
+            Range: 0.0 (low conductor) to 1.0 (high conductor)
+        </div>
+
+        <div class="code-ref">VDICalculator.kt:101 - calculateConductivityIndex()</div>
+
+        <p><strong>Physical Basis:</strong> High conductivity metals (copper, silver) respond well to high frequencies.
+        Low conductivity metals (aluminum foil, iron) attenuate at high frequencies.</p>
+    </div>
+
+    <!-- STEP 4: PHASE CONSISTENCY -->
+    <div class="section">
+        <div class="section-title">STEP 4: PHASE CONSISTENCY CHECK</div>
+
+        <div class="formula">
+            <strong>Phase Consistency Formula:</strong><br><br>
+            stdDev = standard_deviation(all phase measurements)<br>
+            consistency = 1.0 - (stdDev / 90°)<br><br>
+            Range: 0.0 (inconsistent/noisy) to 1.0 (very consistent)
+        </div>
+
+        <div class="code-ref">VDICalculator.kt:122 - calculatePhaseConsistency()</div>
+
+        <p><strong>Purpose:</strong> Measure confidence in the reading. Solid single targets have consistent phase.
+        Multiple objects, ground minerals, or noise create inconsistent phase readings.</p>
+    </div>
+
+    <!-- STEP 5: RAW VDI CALCULATION -->
+    <div class="section">
+        <div class="section-title">STEP 5: RAW VDI CALCULATION</div>
+
+        <div class="flow-container">
+            <div class="flow-column">
+                <div class="box process">Phase Slope < 0?<br>(Ferrous)</div>
+                <div class="arrow">↓ YES</div>
+                <div class="formula">
+                    normalizedSlope = phaseSlope / -10.0<br>
+                    (clamp 0.0 to 1.0)<br><br>
+                    VDI = 30 × (1 - normalizedSlope)<br><br>
+                    <strong>Range: 0-30 VDI</strong>
+                </div>
+            </div>
+
+            <div class="flow-column">
+                <div class="box process">Phase Slope ≥ 0?<br>(Non-Ferrous)</div>
+                <div class="arrow">↓ YES</div>
+                <div class="formula">
+                    Use conductivityIndex<br><br>
+                    VDI = 30 + (conductivityIndex × 69)<br><br>
+                    <strong>Range: 30-99 VDI</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="box process">Amplitude Adjustment<br>
+            Strong signal (>0.5): +5 VDI<br>
+            Weak signal (<0.1): -5 VDI</div>
+
+        <div class="code-ref">VDICalculator.kt:140 - calculateRawVDI()</div>
+    </div>
+
+    <!-- VDI SCALE -->
+    <div class="section">
+        <div class="section-title">STEP 6: VDI SCALE & TARGET CLASSIFICATION</div>
+
+        <div class="vdi-scale">
+            <div class="vdi-marker" style="left: 0%;">0</div>
+            <div class="vdi-marker" style="left: 30%;">30</div>
+            <div class="vdi-marker" style="left: 45%;">45</div>
+            <div class="vdi-marker" style="left: 50%;">50</div>
+            <div class="vdi-marker" style="left: 65%;">65</div>
+            <div class="vdi-marker" style="left: 70%;">70</div>
+            <div class="vdi-marker" style="left: 100%;">99</div>
+
+            <div class="vdi-label" style="left: 5%;">FERROUS</div>
+            <div class="vdi-label" style="left: 32%;">LOW CONDUCTOR</div>
+            <div class="vdi-label" style="left: 53%;">GOLD RANGE</div>
+            <div class="vdi-label" style="left: 75%;">HIGH CONDUCTOR</div>
+        </div>
+
+        <table>
+            <tr>
+                <th>VDI Range</th>
+                <th>Target Type</th>
+                <th>Phase Slope</th>
+                <th>Examples</th>
+            </tr>
+            <tr>
+                <td>0-30</td>
+                <td>FERROUS</td>
+                <td>&lt; -3.0 deg/kHz</td>
+                <td>Iron, steel, nails, bottle caps</td>
+            </tr>
+            <tr>
+                <td>31-45</td>
+                <td>LOW CONDUCTOR</td>
+                <td>-3.0 to 0 deg/kHz</td>
+                <td>Aluminum foil, small aluminum pieces</td>
+            </tr>
+            <tr>
+                <td>46-65</td>
+                <td>MID CONDUCTOR</td>
+                <td>~0 deg/kHz</td>
+                <td>Pull tabs, brass, zinc pennies</td>
+            </tr>
+            <tr>
+                <td>50-70</td>
+                <td>GOLD RANGE</td>
+                <td>-1 to +1 deg/kHz</td>
+                <td>Gold jewelry, rings, chains</td>
+            </tr>
+            <tr>
+                <td>70-99</td>
+                <td>HIGH CONDUCTOR</td>
+                <td>~0 to +1 deg/kHz</td>
+                <td>Copper coins, silver, large targets</td>
+            </tr>
+        </table>
+
+        <div class="code-ref">VDICalculator.kt:174 - classifyTarget()</div>
+    </div>
+
+    <!-- STEP 7: CONFIDENCE -->
+    <div class="section">
+        <div class="section-title">STEP 7: CONFIDENCE CALCULATION</div>
+
+        <div class="formula">
+            <strong>Confidence Score Formula:</strong><br><br>
+            amplitudeScore = clamp(avgAmplitude, 0.0, 1.0)<br>
+            confidence = (amplitudeScore × 0.3) + (phaseConsistency × 0.7)<br><br>
+            Range: 0.0 to 1.0<br>
+            • 0.8-1.0: High confidence<br>
+            • 0.5-0.8: Medium confidence<br>
+            • 0.3-0.5: Low confidence<br>
+            • 0.0-0.3: Very low (returns UNKNOWN)
+        </div>
+
+        <div class="code-ref">VDICalculator.kt:197 - calculateConfidence()</div>
+
+        <p><strong>Note:</strong> Phase consistency is weighted 70% because it's the most reliable indicator
+        of a solid, single target versus trash, multiple objects, or ground minerals.</p>
+    </div>
+
+    <!-- FINAL OUTPUT -->
+    <div class="section">
+        <div class="section-title">FINAL OUTPUT: VDIResult</div>
+
+        <div class="box output">VDIResult Data Class</div>
+        <div class="arrow">↓</div>
+
+        <div class="formula">
+            <strong>Output Structure:</strong><br><br>
+            • vdi: Int (0-99)<br>
+            • confidence: Double (0.0-1.0)<br>
+            • targetType: TargetType enum<br>
+            • phaseSlope: Double (deg/kHz)<br>
+            • conductivityIndex: Double (0.0-1.0)
+        </div>
+
+        <div class="example-container">
+            <div class="example ferrous">
+                <h3>Example Output: Iron Nail</h3>
+                <strong>VDI:</strong> 12<br>
+                <strong>Confidence:</strong> 0.85 (High)<br>
+                <strong>Type:</strong> FERROUS<br>
+                <strong>Phase Slope:</strong> -8.5 deg/kHz<br>
+                <strong>Conductivity:</strong> 0.15<br>
+                <strong>Description:</strong> "Ferrous (Iron/Steel) | Confidence: High"
+            </div>
+
+            <div class="example nonferrous">
+                <h3>Example Output: Copper Penny</h3>
+                <strong>VDI:</strong> 78<br>
+                <strong>Confidence:</strong> 0.92 (High)<br>
+                <strong>Type:</strong> HIGH_CONDUCTOR<br>
+                <strong>Phase Slope:</strong> -0.5 deg/kHz<br>
+                <strong>Conductivity:</strong> 0.85<br>
+                <strong>Description:</strong> "High Conductor (Cu/Ag) | Confidence: High"
+            </div>
+        </div>
+    </div>
+
+    <!-- KEY INSIGHTS -->
+    <div class="section" style="background: #fff9c4; border-color: #f57f17;">
+        <div class="section-title" style="background: #f57f17;">KEY PHYSICS INSIGHTS</div>
+
+        <h3>Why Phase Slope Discriminates Metals:</h3>
+        <ul>
+            <li><strong>Ferrous metals (iron, steel):</strong> High magnetic permeability causes phase to shift dramatically with frequency. The eddy currents and magnetic properties create a steep negative phase slope.</li>
+            <li><strong>Non-ferrous metals (copper, silver, gold):</strong> Only eddy currents (no magnetic effects) result in relatively flat phase response across frequencies.</li>
+            <li><strong>Conductivity matters:</strong> High conductors maintain strong signals at high frequencies. Low conductors attenuate quickly at high frequencies.</li>
+        </ul>
+
+        <h3>Why Multi-Frequency Analysis Works:</h3>
+        <ul>
+            <li>Single frequency can't distinguish between different metals - they all look like "metal detected"</li>
+            <li>By comparing phase and amplitude across multiple frequencies, we can characterize the target's electromagnetic properties</li>
+            <li>This is similar to how X-ray CT uses multiple angles to create a 3D image - we use multiple frequencies to "see" the metal's electrical properties</li>
+        </ul>
+    </div>
+
+</body>
+</html>

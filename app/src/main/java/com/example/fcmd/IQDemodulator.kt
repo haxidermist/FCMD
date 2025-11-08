@@ -39,24 +39,9 @@ class IQDemodulator(
     }
 
     /**
-     * Analyze stereo signal and return tone analysis for each frequency
-     * @param leftChannel Left channel samples
-     * @param rightChannel Right channel samples
-     * @return Map of frequency to tone analysis for each channel
-     */
-    fun analyzeStereo(
-        leftChannel: FloatArray,
-        rightChannel: FloatArray
-    ): Pair<List<ToneAnalysis>, List<ToneAnalysis>> {
-        val leftResults = analyzeMono(leftChannel)
-        val rightResults = analyzeMono(rightChannel)
-        return Pair(leftResults, rightResults)
-    }
-
-    /**
      * Analyze mono signal and return tone analysis for each frequency
      */
-    fun analyzeMono(samples: FloatArray): List<ToneAnalysis> {
+    fun analyze(samples: FloatArray): List<ToneAnalysis> {
         return demodulators.map { demod ->
             demod.analyze(samples)
         }
@@ -154,38 +139,49 @@ private class FixedSizeBuffer(private val size: Int) {
 }
 
 /**
- * DSP processor that performs IQ demodulation in real-time
+ * DSP processor that performs IQ demodulation in real-time (MONO channel)
  */
 class IQDemodulatorDSP(
     private val sampleRate: Int,
     private val frequencies: List<Double>,
-    private val callback: (List<ToneAnalysis>, List<ToneAnalysis>) -> Unit,
-    updateRateHz: Double = 30.0  // Default 30 Hz update rate
+    private val callback: (List<ToneAnalysis>, VDIResult?) -> Unit,
+    updateRateHz: Double = 30.0,  // Default 30 Hz update rate
+    private val enableVDI: Boolean = true,  // Enable VDI calculation
+    private val enableDepth: Boolean = true  // Enable depth estimation
 ) : DspProcessor {
 
     private val demodulator = IQDemodulator(sampleRate, frequencies)
+    private val vdiCalculator = if (enableVDI) VDICalculator() else null
+    private val depthEstimator = if (enableDepth) DepthEstimator() else null
+    private val groundBalanceManager = GroundBalanceManager(frequencies)
     private var frameCount = 0
     private var updateInterval = calculateUpdateInterval(updateRateHz)
 
+    // Performance monitoring
+    private var callbackCount = 0
+    private var lastRateCheckTime = System.currentTimeMillis()
+    private var actualCallbackRate = 0.0
+    private var targetUpdateRateHz = updateRateHz
+
     /**
      * Calculate frame interval based on desired update rate
-     * For 48kHz with typical buffer of ~1024 samples: ~47 frames/sec
      * Update rate limited by audio callback rate
      */
     private fun calculateUpdateInterval(targetHz: Double): Int {
-        // Estimate frames per second based on typical buffer size
-        // At 48kHz with 2x multiplier, buffer is typically ~2048 bytes = 1024 samples
-        // This gives ~47 callbacks per second
-        val estimatedCallbackRate = 47.0
-        val interval = (estimatedCallbackRate / targetHz).toInt().coerceAtLeast(1)
+        // Use actual measured callback rate if available, otherwise use conservative estimate
+        // Actual rate depends on device buffer size: sampleRate / bufferSize
+        // Example: 44100 / 1920 = 23.2 Hz (measured on some devices)
+        val baseRate = if (actualCallbackRate > 0.0) actualCallbackRate else 20.0
+        val interval = (baseRate / targetHz).toInt().coerceAtLeast(1)
         return interval
     }
 
     /**
      * Set the update rate for IQ analysis results
-     * @param hz Update rate in Hertz (max ~47 Hz for typical configuration)
+     * @param hz Update rate in Hertz (max depends on device audio callback rate, typically 20-43 Hz)
      */
     fun setUpdateRate(hz: Double) {
+        targetUpdateRateHz = hz
         updateInterval = calculateUpdateInterval(hz)
     }
 
@@ -194,26 +190,56 @@ class IQDemodulatorDSP(
         rightChannel: FloatArray,
         sampleRate: Int
     ): Pair<FloatArray, FloatArray> {
-        // Perform IQ demodulation
-        val (leftAnalysis, rightAnalysis) = demodulator.analyzeStereo(leftChannel, rightChannel)
+        // Process only left channel (mono RX)
+        return Pair(processMono(leftChannel, sampleRate), leftChannel)
+    }
+
+    override fun processMono(data: FloatArray, sampleRate: Int): FloatArray {
+        // Measure actual callback rate every second
+        callbackCount++
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastRateCheckTime >= 1000) {
+            actualCallbackRate = callbackCount / ((currentTime - lastRateCheckTime) / 1000.0)
+            android.util.Log.d("IQDemodulatorDSP",
+                "Actual callback rate: ${String.format("%.1f", actualCallbackRate)} Hz, " +
+                "Buffer size: ${data.size} samples, Latency: ${String.format("%.1f", data.size / sampleRate.toDouble() * 1000)} ms")
+            callbackCount = 0
+            lastRateCheckTime = currentTime
+
+            // Recalculate update interval based on actual measured rate
+            val newInterval = calculateUpdateInterval(targetUpdateRateHz)
+            if (newInterval != updateInterval) {
+                updateInterval = newInterval
+                val actualUpdateRate = actualCallbackRate / updateInterval
+                android.util.Log.d("IQDemodulatorDSP",
+                    "Update interval adjusted: every $updateInterval frames = ${String.format("%.1f", actualUpdateRate)} Hz (target: ${String.format("%.1f", targetUpdateRateHz)} Hz)")
+            }
+        }
+
+        // Perform IQ demodulation on mono channel
+        val analysis = demodulator.analyze(data)
+
+        // Apply ground balance
+        val balanced = groundBalanceManager.applyGroundBalance(analysis)
 
         // Send results to callback periodically
         frameCount++
         if (frameCount >= updateInterval) {
-            callback(leftAnalysis, rightAnalysis)
-            frameCount = 0
-        }
+            // Calculate VDI if enabled and we have multiple frequencies
+            var vdiResult = if (vdiCalculator != null && balanced.size > 1) {
+                vdiCalculator.calculateVDI(balanced)
+            } else {
+                null
+            }
 
-        // Pass through the original signal
-        return Pair(leftChannel, rightChannel)
-    }
+            // Add depth estimation if enabled
+            if (depthEstimator != null && vdiResult != null) {
+                val depthEstimate = depthEstimator.estimateDepth(balanced, vdiResult)
+                // Create new VDI result with depth estimate included
+                vdiResult = vdiResult.copy(depthEstimate = depthEstimate)
+            }
 
-    override fun processMono(data: FloatArray, sampleRate: Int): FloatArray {
-        val analysis = demodulator.analyzeMono(data)
-
-        frameCount++
-        if (frameCount >= updateInterval) {
-            callback(analysis, emptyList())
+            callback(balanced, vdiResult)
             frameCount = 0
         }
 
@@ -223,5 +249,18 @@ class IQDemodulatorDSP(
     override fun reset() {
         demodulator.reset()
         frameCount = 0
+        callbackCount = 0
+        lastRateCheckTime = System.currentTimeMillis()
+        actualCallbackRate = 0.0
     }
+
+    /**
+     * Get the actual measured callback rate
+     */
+    fun getActualCallbackRate(): Double = actualCallbackRate
+
+    /**
+     * Get ground balance manager for UI control
+     */
+    fun getGroundBalanceManager(): GroundBalanceManager = groundBalanceManager
 }

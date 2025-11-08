@@ -5,7 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.view.WindowManager
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -18,15 +25,29 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var audioEngine: AudioEngine
     private var dspProcessor: DspProcessor? = null
-    private var currentToneCount = 1
+    private var iqDemodulatorDSP: IQDemodulatorDSP? = null
+    private var currentToneCount = 24  // Start with 24 tones for VDI
     private var currentMaxFrequency = 20000.0
+    private var debugPanelVisible = false
+
+    // Audio feedback components
+    private var audioToneGenerator: AudioToneGenerator? = null
+    private var bluetoothAudioManager: BluetoothAudioManager? = null
+    private val audioUpdateHandler = Handler(Looper.getMainLooper())
+
+    // Haptic feedback components
+    private var vibrator: Vibrator? = null
+    private var hapticEnabled = false
+    private var lastVibrationTime = 0L
+    private val vibrationCooldown = 500L // Minimum 500ms between vibrations
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1001
+        private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 1002
         private const val FIXED_MIN_FREQUENCY = 1000.0 // Fixed lowest frequency
         private const val MIN_MAX_FREQUENCY = 2000 // Minimum selectable max frequency
         private const val MAX_MAX_FREQUENCY = 20000 // Maximum selectable max frequency
-        private const val MIN_TONE_COUNT = 1
+        private const val MIN_TONE_COUNT = 2
         private const val MAX_TONE_COUNT = 24
     }
 
@@ -36,21 +57,44 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Keep screen on while app is active
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         // Initialize audio engine with AudioManager
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioEngine = AudioEngine(audioManager)
 
-        // Set waveform callback
+        // Initialize audio feedback components
+        audioToneGenerator = AudioToneGenerator()
+        bluetoothAudioManager = BluetoothAudioManager(this, audioManager)
+
+        // Link target audio generator to audio engine for RIGHT channel stereo output
+        audioEngine.setTargetAudioGenerator(audioToneGenerator)
+
+        // Initialize vibrator for haptic feedback
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        // Set waveform callback - only update when debug panel visible
         audioEngine.setWaveformCallback { stereoData ->
-            runOnUiThread {
-                binding.waveformView.updateWaveform(stereoData)
+            if (debugPanelVisible) {
+                runOnUiThread {
+                    binding.waveformView.updateWaveform(stereoData)
+                }
             }
         }
 
-        // Set spectrum callback
+        // Set spectrum callback - only update when debug panel visible
         audioEngine.setSpectrumCallback { audioData, sampleRate ->
-            runOnUiThread {
-                binding.spectrumView.updateSpectrum(audioData, sampleRate)
+            if (debugPanelVisible) {
+                runOnUiThread {
+                    binding.spectrumView.updateSpectrum(audioData, sampleRate)
+                }
             }
         }
 
@@ -59,6 +103,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // Debug toggle button
+        binding.debugToggleButton.setOnClickListener {
+            debugPanelVisible = !debugPanelVisible
+            binding.debugPanel.visibility = if (debugPanelVisible) {
+                android.view.View.VISIBLE
+            } else {
+                android.view.View.GONE
+            }
+            // Adjust VDI display constraints
+            if (debugPanelVisible) {
+                val params = binding.vdiDisplayView.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+                params.topToBottom = binding.debugPanel.id
+                binding.vdiDisplayView.layoutParams = params
+            } else {
+                val params = binding.vdiDisplayView.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+                params.topToBottom = binding.topBar.id
+                binding.vdiDisplayView.layoutParams = params
+            }
+        }
+
         // Max Frequency control (logarithmic scale: 2000-20000 Hz)
         binding.frequencySeekBar.max = 1000
         val defaultMaxFreq = 20000.0
@@ -69,7 +133,9 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val maxFreq = progressToFrequency(progress)
                 currentMaxFrequency = maxFreq
-                binding.frequencyText.text = "${maxFreq.toInt()} Hz"
+                // Round to nearest 100 Hz for display to avoid 19999 issue
+                val displayFreq = kotlin.math.round(maxFreq / 100.0).toInt() * 100
+                binding.frequencyText.text = "$displayFreq"
                 audioEngine.setFrequencyRange(FIXED_MIN_FREQUENCY, maxFreq, currentToneCount)
                 updateIQDemodulator()
             }
@@ -79,7 +145,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         // Set initial frequency display
-        binding.frequencyText.text = "${defaultMaxFreq.toInt()} Hz"
+        binding.frequencyText.text = "${defaultMaxFreq.toInt()}"
 
         // Volume control
         binding.volumeSeekBar.max = 100
@@ -98,7 +164,8 @@ class MainActivity : AppCompatActivity() {
 
         // Tone count control
         binding.toneCountSeekBar.max = MAX_TONE_COUNT - MIN_TONE_COUNT
-        binding.toneCountSeekBar.progress = 0 // Start with 1 tone
+        binding.toneCountSeekBar.progress = MAX_TONE_COUNT - MIN_TONE_COUNT // Start with 24 tones
+        binding.toneCountText.text = "$currentToneCount"
 
         binding.toneCountSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -128,7 +195,125 @@ class MainActivity : AppCompatActivity() {
         // Info button - launch InfoActivity
         binding.infoButton.setOnClickListener {
             val intent = Intent(this, InfoActivity::class.java)
+
+            // Pass current tone configuration
+            val frequencies = audioEngine.getFrequencies()
+            intent.putExtra(InfoActivity.EXTRA_TONE_FREQUENCIES, frequencies.toDoubleArray())
+            intent.putExtra(InfoActivity.EXTRA_TONE_COUNT, currentToneCount)
+            intent.putExtra(InfoActivity.EXTRA_MIN_FREQ, FIXED_MIN_FREQUENCY)
+            intent.putExtra(InfoActivity.EXTRA_MAX_FREQ, currentMaxFrequency)
+
             startActivity(intent)
+        }
+
+        // Ground Balance Mode Spinner with custom high-contrast layout
+        val gbModes = arrayOf("OFF", "Manual", "Auto Track", "Manual+Track")
+        val adapter = android.widget.ArrayAdapter(this, R.layout.spinner_item, gbModes)
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
+        binding.gbModeSpinner.adapter = adapter
+
+        binding.gbModeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
+                val mode = when (position) {
+                    0 -> GroundBalanceMode.OFF
+                    1 -> GroundBalanceMode.MANUAL
+                    2 -> GroundBalanceMode.AUTO_TRACKING
+                    3 -> GroundBalanceMode.MANUAL_TRACKING
+                    else -> GroundBalanceMode.OFF
+                }
+                gbManager?.setMode(mode)
+
+                // Enable/disable pump button based on mode
+                binding.gbPumpButton.isEnabled = (mode == GroundBalanceMode.MANUAL || mode == GroundBalanceMode.MANUAL_TRACKING) && audioEngine.isRunning()
+
+                // Enable/disable offset control
+                binding.gbOffsetSeekBar.isEnabled = mode != GroundBalanceMode.OFF
+
+                updateStatus(gbManager?.getStatusString() ?: "Ready")
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+
+        // Ground Balance Pump Button
+        binding.gbPumpButton.setOnClickListener {
+            val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
+            if (gbManager?.isCapturing() == true) {
+                // Stop pumping
+                gbManager.stopManualCapture()
+                binding.gbPumpButton.text = "PUMP"
+                Toast.makeText(this, "Ground balance set", Toast.LENGTH_SHORT).show()
+                updateStatus(gbManager.getStatusString())
+            } else {
+                // Start pumping
+                gbManager?.startManualCapture()
+                binding.gbPumpButton.text = "SET"
+                Toast.makeText(this, "Pump coil over ground...", Toast.LENGTH_SHORT).show()
+                updateStatus("Pumping... Move coil up/down")
+            }
+        }
+
+        // Ground Balance Offset
+        binding.gbOffsetSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                // Map 0-100 to -50 to +50
+                val offset = progress - 50
+                binding.gbOffsetText.text = offset.toString()
+                iqDemodulatorDSP?.getGroundBalanceManager()?.setOffset(offset)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // Audio feedback switch
+        binding.audioFeedbackSwitch.setOnCheckedChangeListener { _, isChecked ->
+            audioToneGenerator?.setEnabled(isChecked)
+            if (isChecked) {
+                checkBluetoothPermissions()
+                startAudioFeedback()
+                Toast.makeText(this, "Audio feedback enabled", Toast.LENGTH_SHORT).show()
+            } else {
+                stopAudioFeedback()
+                Toast.makeText(this, "Audio feedback disabled", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Haptic feedback switch
+        binding.hapticFeedbackSwitch.setOnCheckedChangeListener { _, isChecked ->
+            hapticEnabled = isChecked
+            if (isChecked) {
+                Toast.makeText(this, "Haptic feedback enabled", Toast.LENGTH_SHORT).show()
+                // Test vibration
+                triggerHapticFeedback(100)
+            } else {
+                Toast.makeText(this, "Haptic feedback disabled", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Audio feedback volume control
+        binding.audioFeedbackVolumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val volume = progress / 100.0
+                binding.audioFeedbackVolumeText.text = "$progress%"
+                audioToneGenerator?.setVolume(volume)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // Setup Bluetooth audio manager callbacks
+        bluetoothAudioManager?.setConnectionCallback { connected, deviceName ->
+            runOnUiThread {
+                updateAudioRoutingStatus()
+                if (connected) {
+                    Toast.makeText(this, "Connected: $deviceName", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Disconnected: $deviceName", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         // Initialize frequency range in audio engine
@@ -136,6 +321,7 @@ class MainActivity : AppCompatActivity() {
 
         updateStatus("Ready. Press Start to begin.")
         updateIQDemodulator()  // Initialize IQ demodulator
+        updateAudioRoutingStatus()
     }
 
     private fun checkPermissions(): Boolean {
@@ -178,12 +364,14 @@ class MainActivity : AppCompatActivity() {
             binding.frequencySeekBar.isEnabled = false
             binding.toneCountSeekBar.isEnabled = false
 
-            val toneText = if (currentToneCount == 1) {
-                "TX: ${FIXED_MIN_FREQUENCY.toInt()} Hz"
-            } else {
-                "TX: $currentToneCount tones (${FIXED_MIN_FREQUENCY.toInt()}-${currentMaxFrequency.toInt()} Hz)"
-            }
-            updateStatus("Running - $toneText, RX: Stereo IQ")
+            // Enable pump button if in manual GB mode
+            val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
+            val mode = gbManager?.getMode()
+            binding.gbPumpButton.isEnabled = (mode == GroundBalanceMode.MANUAL || mode == GroundBalanceMode.MANUAL_TRACKING)
+
+            val toneText = "TX: $currentToneCount tones (${FIXED_MIN_FREQUENCY.toInt()}-${currentMaxFrequency.toInt()} Hz)"
+            val gbStatus = gbManager?.getStatusString() ?: ""
+            updateStatus("Running - $toneText, RX: Mono IQ | $gbStatus")
             Toast.makeText(this, "Audio started", Toast.LENGTH_SHORT).show()
         } else {
             updateStatus("Error: Failed to start audio")
@@ -197,14 +385,19 @@ class MainActivity : AppCompatActivity() {
         binding.stopButton.isEnabled = false
         binding.frequencySeekBar.isEnabled = true
         binding.toneCountSeekBar.isEnabled = true
+        binding.gbPumpButton.isEnabled = false
         binding.waveformView.clear()
         binding.spectrumView.clear()
-        updateStatus("Stopped")
+        binding.vdiDisplayView.clear()
+
+        val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
+        val gbStatus = gbManager?.getStatusString() ?: ""
+        updateStatus("Stopped | $gbStatus")
         Toast.makeText(this, "Audio stopped", Toast.LENGTH_SHORT).show()
     }
 
     private fun updateStatus(message: String) {
-        binding.statusText.text = "Status: $message"
+        binding.statusText.text = message
     }
 
     /**
@@ -230,6 +423,8 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         audioEngine.stop()
+        // Target audio is integrated into AudioEngine - stops automatically
+        bluetoothAudioManager?.cleanup()
     }
 
     override fun onPause() {
@@ -251,21 +446,22 @@ class MainActivity : AppCompatActivity() {
         // Get actual sample rate from audio engine
         val sampleRate = audioEngine.getSampleRate()
 
-        // Set up IQ demodulator DSP with 40 Hz update rate
-        dspProcessor = IQDemodulatorDSP(
+        // Set up IQ demodulator DSP with 40 Hz update rate and VDI calculation (MONO)
+        iqDemodulatorDSP = IQDemodulatorDSP(
             sampleRate,
             frequencies,
             updateRateHz = 40.0,
-            callback = { leftAnalysis, rightAnalysis ->
+            enableVDI = true,  // Always enable VDI (minimum is now 2 tones)
+            callback = { analysis, vdiResult ->
                 runOnUiThread {
-                    updateToneAnalysis(leftAnalysis, rightAnalysis, sampleRate)
+                    updateToneAnalysis(analysis, sampleRate, vdiResult)
                 }
             }
         )
+        dspProcessor = iqDemodulatorDSP
         audioEngine.setDspProcessor(dspProcessor)
 
-        // Show IQ analysis view
-        binding.toneAnalysisScrollView.visibility = android.view.View.VISIBLE
+        // Show spectrum view in debug panel
         binding.spectrumView.visibility = android.view.View.VISIBLE
 
         // Show initial message with update rate info
@@ -276,50 +472,199 @@ class MainActivity : AppCompatActivity() {
             appendLine("━━━ IQ DEMODULATOR ━━━")
             appendLine()
             appendLine("Tones: ${frequencies.size}")
-            if (frequencies.size == 1) {
-                appendLine("Frequency: ${frequencies[0].toInt()} Hz")
-            } else {
-                appendLine("Range: ${minFreq.toInt()}-${maxFreq.toInt()} Hz")
-            }
-            appendLine("Update: ~47 Hz | Filter: IIR")
+            appendLine("Range: ${minFreq.toInt()}-${maxFreq.toInt()} Hz")
+            appendLine("Update: ~40 Hz | Filter: IIR")
             appendLine()
             appendLine("Press START for IQ analysis...")
             appendLine("Green spectrum overlay shows TX.")
         }
 
-        val statusText = if (currentToneCount == 1) {
-            "${FIXED_MIN_FREQUENCY.toInt()} Hz - IQ Mode"
-        } else {
-            "$currentToneCount tones (${FIXED_MIN_FREQUENCY.toInt()}-${currentMaxFrequency.toInt()} Hz) - IQ Mode"
-        }
+        val statusText = "$currentToneCount tones (${FIXED_MIN_FREQUENCY.toInt()}-${currentMaxFrequency.toInt()} Hz) - IQ Mode"
         updateStatus(statusText)
     }
 
-    private fun updateToneAnalysis(leftAnalysis: List<ToneAnalysis>, rightAnalysis: List<ToneAnalysis>, sampleRate: Int) {
-        val text = buildString {
-            appendLine("━━━ IQ ANALYSIS ━━━")
-            appendLine("Sample Rate: ${sampleRate/1000}kHz | Update: 40Hz")
-            appendLine("Hz     L-Amp  L-Φ°   R-Amp  R-Φ°")
-            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    private fun updateToneAnalysis(
+        analysis: List<ToneAnalysis>,
+        sampleRate: Int,
+        vdiResult: VDIResult?
+    ) {
+        val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
+        val gbStatus = gbManager?.getStatusString() ?: "GB: OFF"
 
-            for (i in leftAnalysis.indices) {
-                val left = leftAnalysis[i]
-                val right = if (i < rightAnalysis.size) rightAnalysis[i] else null
+        // Update VDI display view
+        binding.vdiDisplayView.updateVDI(vdiResult)
 
-                val freqStr = String.format("%5.0f", left.frequency)
-                val leftAmpStr = String.format("%.3f", left.amplitude)
-                val leftPhaseStr = String.format("%4.0f", left.phaseDegrees())
-
-                val rightAmpStr = if (right != null) String.format("%.3f", right.amplitude) else " --- "
-                val rightPhaseStr = if (right != null) String.format("%4.0f", right.phaseDegrees()) else " -- "
-
-                appendLine("$freqStr $leftAmpStr $leftPhaseStr° $rightAmpStr $rightPhaseStr°")
-            }
-
-            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            appendLine("Amp:0-1 Φ:-180→+180")
+        // Update audio feedback with VDI
+        if (vdiResult != null && binding.audioFeedbackSwitch.isChecked) {
+            audioToneGenerator?.updateVDI(vdiResult.vdi, vdiResult.confidence)
         }
 
-        binding.toneAnalysisText.text = text
+        // Trigger haptic feedback for high confidence targets
+        if (vdiResult != null && hapticEnabled) {
+            if (vdiResult.confidence > 0.8) {
+                triggerHapticFeedback(50) // Short pulse for high confidence
+            }
+        }
+
+        // Update status text with ground balance info
+        updateStatus(gbStatus)
+
+        // Update debug panel if visible
+        if (debugPanelVisible) {
+            val text = buildString {
+                appendLine("━━━ IQ ANALYSIS (MONO) ━━━")
+                appendLine("Sample Rate: ${sampleRate/1000}kHz | Update: 40Hz")
+                appendLine(gbStatus)
+
+                // Show VDI prominently if available
+                if (vdiResult != null) {
+                    appendLine()
+                    appendLine("╔══════════════════════════════╗")
+                    appendLine("║       VDI: ${String.format("%2d", vdiResult.vdi)} (${getVDIBar(vdiResult.vdi)})      ║")
+                    appendLine("║ ${VDICalculator().getTargetDescription(vdiResult).padEnd(28)} ║")
+
+                    // Show depth estimate if available
+                    if (vdiResult.depthEstimate != null) {
+                        val depth = vdiResult.depthEstimate!!
+                        val depthLine = " ${depth.category.indicator} ${depth.category.displayName} (${depth.category.depthRange})"
+                        appendLine("║${depthLine.padEnd(30)}║")
+                    }
+
+                    appendLine("╚══════════════════════════════╝")
+                    appendLine()
+                }
+
+                appendLine("Hz      Amp    Phase°")
+                appendLine("━━━━━━━━━━━━━━━━━━━━")
+
+                for (tone in analysis) {
+                    val freqStr = String.format("%5.0f", tone.frequency)
+                    val ampStr = String.format("%.3f", tone.amplitude)
+                    val phaseStr = String.format("%4.0f", tone.phaseDegrees())
+
+                    appendLine("$freqStr  $ampStr  $phaseStr°")
+                }
+
+                appendLine("━━━━━━━━━━━━━━━━━━━━")
+                appendLine("Amp:0-1 Φ:-180→+180")
+
+                // Show VDI technical details at bottom if available
+                if (vdiResult != null) {
+                    appendLine()
+                    appendLine("VDI Details:")
+                    appendLine("Phase Slope: ${String.format("%.2f", vdiResult.phaseSlope)}°/kHz")
+                    appendLine("Conductivity: ${String.format("%.2f", vdiResult.conductivityIndex)}")
+                    appendLine("Confidence: ${String.format("%.0f", vdiResult.confidence * 100)}%")
+
+                    // Show depth estimation details
+                    if (vdiResult.depthEstimate != null) {
+                        val depth = vdiResult.depthEstimate!!
+                        appendLine()
+                        appendLine("Depth Estimate:")
+                        appendLine("Category: ${depth.category.displayName} (${depth.category.depthRange})")
+                        appendLine("Amplitude: ${String.format("%.3f", depth.amplitude)}")
+                        appendLine("Factor: ${String.format("%.2f", depth.depthFactor)}")
+                        appendLine("Confidence: ${String.format("%.0f", depth.confidence * 100)}%")
+                    }
+                }
+            }
+
+            binding.toneAnalysisText.text = text
+        }
+    }
+
+    /**
+     * Generate a visual VDI bar indicator
+     */
+    private fun getVDIBar(vdi: Int): String {
+        val barLength = 10
+        val filled = (vdi * barLength / 99).coerceIn(0, barLength)
+        return "█".repeat(filled) + "░".repeat(barLength - filled)
+    }
+
+    /**
+     * Start audio feedback tone generator
+     * NOTE: AudioToneGenerator is now integrated into AudioEngine's RIGHT channel
+     * No need to start/stop separately - it's mixed into stereo output
+     */
+    private fun startAudioFeedback() {
+        // Target audio is already integrated into AudioEngine stereo output
+        // Just enable the generator and update routing status
+        updateAudioRoutingStatus()
+    }
+
+    /**
+     * Stop audio feedback tone generator
+     * NOTE: AudioToneGenerator is now integrated into AudioEngine's RIGHT channel
+     * No need to start/stop separately - it's mixed into stereo output
+     */
+    private fun stopAudioFeedback() {
+        // Target audio is integrated into AudioEngine - no separate stop needed
+    }
+
+    /**
+     * Update audio routing status display
+     */
+    private fun updateAudioRoutingStatus() {
+        // Show stereo output mode for USB codec
+        val status = if (binding.audioFeedbackSwitch.isChecked) {
+            "Stereo: L=TX R=Target"
+        } else {
+            "Stereo: L=TX R=Silent"
+        }
+        binding.audioRoutingText.text = status
+    }
+
+    /**
+     * Check Bluetooth permissions for audio routing
+     */
+    private fun checkBluetoothPermissions(): Boolean {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val permissions = arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT
+            )
+            val missingPermissions = permissions.filter {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }
+
+            if (missingPermissions.isNotEmpty()) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    missingPermissions.toTypedArray(),
+                    BLUETOOTH_PERMISSION_REQUEST_CODE
+                )
+                return false
+            }
+        }
+        return true
+    }
+
+    /**
+     * Trigger haptic feedback vibration
+     */
+    private fun triggerHapticFeedback(durationMs: Long) {
+        val currentTime = System.currentTimeMillis()
+
+        // Cooldown to prevent excessive vibrations
+        if (currentTime - lastVibrationTime < vibrationCooldown) {
+            return
+        }
+
+        lastVibrationTime = currentTime
+
+        vibrator?.let { vib ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Use VibrationEffect for Android O and above
+                val effect = VibrationEffect.createOneShot(
+                    durationMs,
+                    VibrationEffect.DEFAULT_AMPLITUDE
+                )
+                vib.vibrate(effect)
+            } else {
+                // Fallback for older Android versions
+                @Suppress("DEPRECATION")
+                vib.vibrate(durationMs)
+            }
+        }
     }
 }

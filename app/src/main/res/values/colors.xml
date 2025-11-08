@@ -7,4 +7,10 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Custom colors for improved contrast -->
+    <color name="spinner_background">#FF1A1A1A</color>
+    <color name="spinner_text">#FFFFFFFF</color>
+    <color name="spinner_dropdown_background">#FF2A2A2A</color>
+    <color name="spinner_selected_background">#FF00FFFF</color>
 </resources>

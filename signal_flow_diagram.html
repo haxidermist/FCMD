@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Detector Signal Flow Diagram</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #000;
+        }
+        .layer {
+            margin: 30px 0;
+            padding: 20px;
+            border: 3px solid #333;
+            border-radius: 8px;
+        }
+        .layer-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #000;
+            background: #e0e0e0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .box {
+            border: 2px solid #000;
+            padding: 15px;
+            margin: 15px auto;
+            text-align: center;
+            border-radius: 6px;
+            background: #f9f9f9;
+            font-weight: bold;
+            max-width: 300px;
+        }
+        .box.wide {
+            max-width: 500px;
+        }
+        .box.hardware {
+            background: #ffe0b2;
+            border-color: #ff6f00;
+        }
+        .box.software {
+            background: #b3e5fc;
+            border-color: #0277bd;
+        }
+        .box.dsp {
+            background: #c8e6c9;
+            border-color: #388e3c;
+        }
+        .box.ui {
+            background: #f8bbd0;
+            border-color: #c2185b;
+        }
+        .arrow {
+            text-align: center;
+            font-size: 24px;
+            margin: 10px 0;
+            color: #000;
+        }
+        .label {
+            text-align: center;
+            font-style: italic;
+            color: #555;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .flow-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            gap: 20px;
+        }
+        .flow-column {
+            flex: 1;
+        }
+        .info-box {
+            background: #fff9c4;
+            border: 2px solid #f57f17;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #f57f17;
+        }
+        .info-box ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin: 5px 0;
+        }
+        .dsp-details {
+            background: #e8f5e9;
+            border: 2px solid #388e3c;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        .stereo-split {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">METAL DETECTOR - SIGNAL FLOW DIAGRAM</div>
+
+    <!-- HARDWARE LAYER -->
+    <div class="layer">
+        <div class="layer-title">HARDWARE LAYER</div>
+
+        <div class="box hardware">METAL TARGET</div>
+        <div class="arrow">↓</div>
+        <div class="label">EM Field Distortion</div>
+        <div class="arrow">↓</div>
+        <div class="box hardware">RECEIVE COIL</div>
+        <div class="arrow">↓</div>
+        <div class="label">Analog Signal</div>
+        <div class="arrow">↓</div>
+        <div class="box hardware">MICROPHONE INPUT</div>
+
+        <div style="height: 40px;"></div>
+
+        <div class="box hardware">AUDIO OUTPUT<br>(Speaker/Headphones)</div>
+        <div class="arrow">↑</div>
+        <div class="box hardware">TRANSMIT COIL</div>
+    </div>
+
+    <!-- SOFTWARE LAYER -->
+    <div class="layer">
+        <div class="layer-title">SOFTWARE LAYER - AudioEngine (44.1 kHz)</div>
+
+        <div class="flow-container">
+            <!-- TX Path -->
+            <div class="flow-column">
+                <div class="box software wide">STEREO OUTPUT<br>(AudioTrack)</div>
+                <div class="arrow">↓</div>
+
+                <div class="stereo-split">
+                    <div>
+                        <div class="box software">LEFT<br>Multi-Tone<br>Generator</div>
+                        <div class="label">TX Signal<br>1-24 tones<br>1000-20000 Hz</div>
+                    </div>
+                    <div>
+                        <div class="box software">RIGHT<br>Target Audio<br>Generator</div>
+                        <div class="label">Feedback<br>Audio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RX Path -->
+            <div class="flow-column">
+                <div class="box software wide">MONO INPUT<br>(AudioRecord)<br>1920 samples</div>
+                <div class="label">RX Signal (Left channel only)</div>
+                <div class="label">Callback: 23.2 Hz<br>Latency: 43.5 ms</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DSP LAYER -->
+    <div class="layer">
+        <div class="layer-title">DSP PROCESSING LAYER</div>
+
+        <div class="box dsp wide">IQ DEMODULATOR DSP<br>(Real-time processing)</div>
+
+        <div class="dsp-details">
+            <strong>For each frequency:</strong><br>
+            • Quadrature mixing: I = sample × cos(phase), Q = -sample × sin(phase)<br>
+            • Single-pole IIR low-pass filter (α = 0.01, ~10 Hz cutoff)<br>
+            • Amplitude calculation: √(I² + Q²) × 2<br>
+            • Phase calculation: atan2(Q, I)
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="flow-container">
+            <div class="flow-column">
+                <div class="box dsp">Ground Balance<br>Manager</div>
+                <div class="label">Remove ground<br>interference</div>
+            </div>
+            <div class="flow-column">
+                <div class="box dsp">VDI Calculator</div>
+                <div class="label">Multi-tone<br>discrimination</div>
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+        <div class="box dsp wide">Callback to UI<br>(30 Hz update rate)</div>
+        <div class="label">ToneAnalysis List + VDI Result</div>
+    </div>
+
+    <!-- UI LAYER -->
+    <div class="layer">
+        <div class="layer-title">UI LAYER</div>
+
+        <div class="flow-container">
+            <div class="flow-column">
+                <div class="box ui">Waveform Display</div>
+            </div>
+            <div class="flow-column">
+                <div class="box ui">VDI Display &<br>Tone Info</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KEY PARAMETERS -->
+    <div class="info-box">
+        <h3>KEY SIGNAL PARAMETERS</h3>
+        <ul>
+            <li><strong>Sample Rate:</strong> 44,100 Hz</li>
+            <li><strong>Buffer Size:</strong> 1920 samples (device-dependent)</li>
+            <li><strong>Audio Callback Rate:</strong> 23.2 Hz (measured on device)</li>
+            <li><strong>Buffer Latency:</strong> 43.5 ms</li>
+            <li><strong>Update Rate:</strong> 30 Hz (configurable, max ~23 Hz)</li>
+            <li><strong>TX Frequencies:</strong> 1-24 tones, logarithmically spaced</li>
+            <li><strong>Frequency Range:</strong> 1000 Hz (fixed min) to 20000 Hz (max)</li>
+            <li><strong>RX Processing:</strong> IQ demodulation with α=0.01 IIR filter</li>
+        </ul>
+    </div>
+
+    <!-- CODE REFERENCES -->
+    <div class="info-box">
+        <h3>CODE REFERENCES</h3>
+        <ul>
+            <li><strong>AudioEngine.kt:274</strong> - playbackLoop() generates stereo output</li>
+            <li><strong>AudioEngine.kt:326</strong> - recordLoop() captures mono input</li>
+            <li><strong>IQDemodulator.kt:195</strong> - processMono() called every 43.5 ms</li>
+            <li><strong>IQDemodulator.kt:77</strong> - analyze() performs IQ demodulation</li>
+        </ul>
+    </div>
+</body>
+</html>

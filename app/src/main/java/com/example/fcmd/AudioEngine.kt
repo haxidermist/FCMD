@@ -13,12 +13,14 @@ import kotlin.math.sin
 
 class AudioEngine(
     private val audioManager: AudioManager,
-    private val bufferSizeMultiplier: Int = 2
+    private val bufferSizeMultiplier: Int = 1  // Reduced from 2 for lower latency and higher update rate
 ) {
+    // Target audio generator reference (for right channel mixing)
+    private var targetAudioGenerator: AudioToneGenerator? = null
     companion object {
         private const val TAG = "AudioEngine"
-        private const val CHANNEL_CONFIG_OUT = AudioFormat.CHANNEL_OUT_MONO
-        private const val CHANNEL_CONFIG_IN = AudioFormat.CHANNEL_IN_STEREO
+        private const val CHANNEL_CONFIG_OUT = AudioFormat.CHANNEL_OUT_STEREO  // Stereo: L=TX R=TargetAudio
+        private const val CHANNEL_CONFIG_IN = AudioFormat.CHANNEL_IN_MONO     // Mono: Left channel only
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
         // Try these sample rates in order of preference
@@ -142,6 +144,14 @@ class AudioEngine(
     }
 
     /**
+     * Set target audio generator for right channel output
+     */
+    fun setTargetAudioGenerator(generator: AudioToneGenerator?) {
+        targetAudioGenerator = generator
+        Log.d(TAG, "Target audio generator set: ${if (generator != null) "enabled" else "disabled"}")
+    }
+
+    /**
      * Start audio generation and recording
      */
     fun start(): Boolean {
@@ -151,8 +161,8 @@ class AudioEngine(
         }
 
         try {
-            // Initialize AudioTrack for playback
-            // Use USAGE_MEDIA with FLAG_AUDIBILITY_ENFORCED to bypass system volume
+            // Initialize AudioTrack for stereo playback
+            // Left channel = TX tones, Right channel = Target audio
             audioTrack = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
@@ -176,13 +186,17 @@ class AudioEngine(
             audioTrack?.setVolume(1.0f)
 
             // Initialize AudioRecord for recording
-            audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                sampleRate,
-                CHANNEL_CONFIG_IN,
-                AUDIO_FORMAT,
-                minBufferSizeIn
-            )
+            audioRecord = AudioRecord.Builder()
+                .setAudioSource(MediaRecorder.AudioSource.MIC)
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(CHANNEL_CONFIG_IN)
+                        .setEncoding(AUDIO_FORMAT)
+                        .build()
+                )
+                .setBufferSizeInBytes(minBufferSizeIn)
+                .build()
 
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord initialization failed")
@@ -257,32 +271,43 @@ class AudioEngine(
     }
 
     /**
-     * Playback loop - generates and plays sine wave or multi-tone
+     * Playback loop - generates stereo output
+     * LEFT channel = TX detector tones
+     * RIGHT channel = Target audio feedback
      */
     private fun playbackLoop() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
 
-        val bufferSize = minBufferSizeOut / 2 // 16-bit samples
+        val bufferSize = minBufferSizeOut / 2 // 16-bit samples (stereo interleaved)
         val buffer = ShortArray(bufferSize)
-        val floatBuffer = FloatArray(bufferSize)
+        val monoFrames = bufferSize / 2 // Number of frames per channel
+        val floatBuffer = FloatArray(monoFrames)
         var frameCount = 0
 
-        Log.d(TAG, "Playback loop started (Tones: $toneCount)")
+        Log.d(TAG, "Playback loop started (Stereo: LEFT=TX tones, RIGHT=Target audio, Tones: $toneCount)")
 
         while (isPlaying.get()) {
-            if (multiToneGenerator != null) {
-                // Generate tones using multi-tone generator - apply transmit volume control
-                val samples = multiToneGenerator!!.generateSamples(bufferSize)
-                for (i in buffer.indices) {
-                    buffer[i] = (samples[i] * Short.MAX_VALUE * 0.8 * transmitVolume).toInt().toShort()
-                    floatBuffer[i] = samples[i]
-                }
+            // Generate LEFT channel - TX tones
+            val leftSamples = if (multiToneGenerator != null) {
+                multiToneGenerator!!.generateSamples(monoFrames)
             } else {
-                // Fallback: silence if generator not initialized
-                for (i in buffer.indices) {
-                    buffer[i] = 0
-                    floatBuffer[i] = 0f
-                }
+                FloatArray(monoFrames) { 0f }
+            }
+
+            // Generate RIGHT channel - Target audio
+            val rightSamples = targetAudioGenerator?.generateTargetAudioSamples(monoFrames)
+                ?: FloatArray(monoFrames) { 0f }
+
+            // Interleave stereo: L, R, L, R, L, R...
+            for (i in 0 until monoFrames) {
+                // LEFT channel (TX tones)
+                val leftValue = (leftSamples[i] * Short.MAX_VALUE * 0.8 * transmitVolume).toInt().toShort()
+                buffer[i * 2] = leftValue
+                floatBuffer[i] = leftSamples[i]
+
+                // RIGHT channel (Target audio)
+                val rightValue = (rightSamples[i] * Short.MAX_VALUE * 0.8).toInt().toShort()
+                buffer[i * 2 + 1] = rightValue
             }
 
             // Send to spectrum analyzer every 5 frames (~10 Hz update rate)
@@ -292,7 +317,7 @@ class AudioEngine(
                 frameCount = 0
             }
 
-            // Write to audio output
+            // Write stereo output to audio
             audioTrack?.write(buffer, 0, buffer.size)
         }
 
@@ -300,7 +325,7 @@ class AudioEngine(
     }
 
     /**
-     * Record loop - captures stereo audio and processes it
+     * Record loop - captures mono audio (left channel) and processes it
      */
     private fun recordLoop() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
@@ -309,7 +334,7 @@ class AudioEngine(
         val buffer = ShortArray(bufferSize)
         val floatBuffer = FloatArray(bufferSize)
 
-        Log.d(TAG, "Record loop started, buffer size: $bufferSize samples")
+        Log.d(TAG, "Record loop started (MONO - Left channel only), buffer size: $bufferSize samples")
 
         while (isRecording.get()) {
             val readSamples = audioRecord?.read(buffer, 0, buffer.size) ?: 0
@@ -320,29 +345,16 @@ class AudioEngine(
                     floatBuffer[i] = buffer[i].toFloat() / Short.MAX_VALUE
                 }
 
-                // Separate stereo channels for DSP processing
-                val samplesPerChannel = readSamples / 2
-                val leftChannel = FloatArray(samplesPerChannel)
-                val rightChannel = FloatArray(samplesPerChannel)
+                // Apply DSP processing to mono channel
+                val processed = dspProcessor?.processMono(floatBuffer.copyOf(readSamples), sampleRate)
+                    ?: floatBuffer.copyOf(readSamples)
 
-                for (i in 0 until samplesPerChannel) {
-                    leftChannel[i] = floatBuffer[i * 2]
-                    rightChannel[i] = floatBuffer[i * 2 + 1]
-                }
-
-                // Apply DSP processing if available
-                val processed = dspProcessor?.processStereo(leftChannel, rightChannel, sampleRate)
-
-                // Interleave channels back for display
-                val displayData = if (processed != null) {
-                    FloatArray(readSamples).apply {
-                        for (i in 0 until samplesPerChannel) {
-                            this[i * 2] = processed.first[i]
-                            this[i * 2 + 1] = processed.second[i]
-                        }
+                // Duplicate mono to stereo for waveform display (L=signal, R=signal)
+                val displayData = FloatArray(readSamples * 2).apply {
+                    for (i in 0 until readSamples) {
+                        this[i * 2] = processed[i]      // Left
+                        this[i * 2 + 1] = processed[i]  // Right (duplicate)
                     }
-                } else {
-                    floatBuffer.copyOf(readSamples)
                 }
 
                 // Send to waveform display
