@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCMD - Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f6f8fa;
+            color: #24292e;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #0366d6;
+        }
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            color: #0366d6;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #586069;
+        }
+        .doc-section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .doc-section h2 {
+            margin-top: 0;
+            color: #0366d6;
+            font-size: 28px;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+        .doc-list {
+            list-style: none;
+            padding: 0;
+        }
+        .doc-list li {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .doc-list li:before {
+            content: "📄";
+            position: absolute;
+            left: 0;
+        }
+        .doc-list a {
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .doc-list a:hover {
+            text-decoration: underline;
+        }
+        .doc-description {
+            color: #586069;
+            font-size: 14px;
+            margin-top: 5px;
+            padding-left: 0;
+        }
+        .github-link {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+        .github-link a {
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .github-link a:hover {
+            text-decoration: underline;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #28a745;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge.interactive {
+            background: #6f42c1;
+        }
+        .badge.pdf {
+            background: #d73a49;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>FCMD Documentation</h1>
+        <div class="subtitle">Professional Metal Detector for Android</div>
+        <div class="subtitle">Multi-Frequency IQ Demodulation & Real-Time DSP</div>
+    </div>
+
+    <div class="doc-section">
+        <h2>📚 Complete Technical Guide</h2>
+        <ul class="doc-list">
+            <li>
+                <a href="Android_Metal_Detection_Ebook.html">Android Metal Detection: From Physics to Code</a>
+                <span class="badge">50+ Pages</span>
+                <div class="doc-description">
+                    Comprehensive ebook covering electromagnetic theory, DSP algorithms, and complete implementation details.
+                    From beginner basics to expert-level signal processing.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="doc-section">
+        <h2>📊 Interactive Diagrams</h2>
+        <ul class="doc-list">
+            <li>
+                <a href="signal_flow_diagram.html">Signal Flow Diagram</a>
+                <span class="badge interactive">Interactive</span>
+                <div class="doc-description">
+                    Visual overview of the complete system architecture from audio I/O through DSP processing to UI display.
+                </div>
+            </li>
+            <li>
+                <a href="vdi_phase_slope_diagram.html">VDI Phase Slope Process</a>
+                <span class="badge interactive">Interactive</span>
+                <div class="doc-description">
+                    Step-by-step visualization of how phase slope discrimination identifies different metals (ferrous vs non-ferrous).
+                </div>
+            </li>
+            <li>
+                <a href="ground_balance_diagram.html">Ground Balance Process</a>
+                <span class="badge interactive">Interactive</span>
+                <div class="doc-description">
+                    Detailed explanation of ground balance algorithms including manual, auto-tracking, and hybrid modes.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="doc-section">
+        <h2>📖 Technical Documentation</h2>
+        <ul class="doc-list">
+            <li>
+                <a href="DEPTH_ESTIMATION.md">Depth Estimation Guide</a>
+                <div class="doc-description">
+                    How depth estimation works, its limitations, calibration procedures, and expected accuracy ranges.
+                </div>
+            </li>
+            <li>
+                <a href="AUDIO_FEEDBACK.md">Audio Feedback System</a>
+                <div class="doc-description">
+                    Documentation of the multi-tone audio feedback system and target audio generation.
+                </div>
+            </li>
+            <li>
+                <a href="CONTRIBUTING.md">Contributing Guide</a>
+                <div class="doc-description">
+                    How to contribute code, documentation, or hardware designs. Includes coding standards and testing guidelines.
+                </div>
+            </li>
+            <li>
+                <a href="PUBLISHING_TO_GITHUB.md">Publishing Guide</a>
+                <div class="doc-description">
+                    Complete guide to publishing and maintaining the project on GitHub.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="doc-section">
+        <h2>⚡ Quick Links</h2>
+        <ul class="doc-list">
+            <li>
+                <a href="README.md">README</a>
+                <div class="doc-description">
+                    Project overview, features, installation instructions, and quick start guide.
+                </div>
+            </li>
+            <li>
+                <a href="LICENSE">MIT License</a>
+                <div class="doc-description">
+                    Open source license - free to use, modify, and distribute.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="doc-section">
+        <h2>📑 PDF Documents</h2>
+        <ul class="doc-list">
+            <li>
+                <a href="Android Metal Detection_ From Physics to Code.pdf">Complete Ebook (PDF)</a>
+                <span class="badge pdf">PDF</span>
+                <div class="doc-description">
+                    Printable PDF version of the complete technical guide.
+                </div>
+            </li>
+            <li>
+                <a href="VDI Phase Slope Process Diagram.pdf">VDI Diagram (PDF)</a>
+                <span class="badge pdf">PDF</span>
+                <div class="doc-description">
+                    Printable PDF of the VDI phase slope discrimination diagram.
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="github-link">
+        <a href="https://github.com/haxidermist/FCMD">← Back to GitHub Repository</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; padding: 20px; color: #586069; font-size: 14px;">
+        <p>FCMD - Field Coil Metal Detector</p>
+        <p>Professional metal detection using smartphone technology</p>
+    </div>
+</body>
+</html>

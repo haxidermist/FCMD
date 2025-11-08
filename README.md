@@ -268,12 +268,15 @@ The app processes audio in real-time with strict deadlines:
 
 ## Documentation
 
-- **[Complete Ebook](Android_Metal_Detection_Ebook.html)**: 50+ page guide from physics to code
+📚 **[View All Documentation](https://haxidermist.github.io/FCMD/)** (Rendered HTML with interactive diagrams)
+
+Or browse individual files:
+- **[Complete Ebook](https://haxidermist.github.io/FCMD/Android_Metal_Detection_Ebook.html)**: 50+ page guide from physics to code
 - **[Depth Estimation](DEPTH_ESTIMATION.md)**: How depth estimation works and its limitations
 - **[Audio Feedback](AUDIO_FEEDBACK.md)**: Audio feedback system documentation
-- **[Signal Flow Diagram](signal_flow_diagram.html)**: Visual system overview
-- **[VDI Process Diagram](vdi_phase_slope_diagram.html)**: Phase slope discrimination explained
-- **[Ground Balance Diagram](ground_balance_diagram.html)**: Ground balance algorithms visualized
+- **[Signal Flow Diagram](https://haxidermist.github.io/FCMD/signal_flow_diagram.html)**: Visual system overview
+- **[VDI Process Diagram](https://haxidermist.github.io/FCMD/vdi_phase_slope_diagram.html)**: Phase slope discrimination explained
+- **[Ground Balance Diagram](https://haxidermist.github.io/FCMD/ground_balance_diagram.html)**: Ground balance algorithms visualized
 
 ## Limitations
 
