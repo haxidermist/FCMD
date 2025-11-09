@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ultra compact spacing for medium-density compact screens (like Oppo CPH2021) -->
+    <dimen name="spacing_tiny">1dp</dimen>
+    <dimen name="spacing_small">2dp</dimen>
+    <dimen name="spacing_medium">4dp</dimen>
+    <dimen name="spacing_large">6dp</dimen>
+    <dimen name="spacing_xlarge">8dp</dimen>
+
+    <!-- Smaller text for compact screens -->
+    <dimen name="text_size_tiny">8sp</dimen>
+    <dimen name="text_size_small">10sp</dimen>
+    <dimen name="text_size_normal">11sp</dimen>
+    <dimen name="text_size_medium">12sp</dimen>
+    <dimen name="text_size_large">13sp</dimen>
+
+    <!-- Compact layout dimensions (increased to prevent wrapping on high-density screens) -->
+    <dimen name="label_min_width">65dp</dimen>
+    <dimen name="label_min_width_small">50dp</dimen>
+    <dimen name="value_text_width">60dp</dimen>
+
+    <!-- Smaller buttons -->
+    <dimen name="button_height_normal">36dp</dimen>
+    <dimen name="button_height_large">40dp</dimen>
+    <dimen name="button_min_height">36dp</dimen>
+
+    <!-- Reduced debug panel heights -->
+    <dimen name="waveform_height">100dp</dimen>
+    <dimen name="spectrum_height">100dp</dimen>
+
+    <!-- Very tight control panel -->
+    <dimen name="control_panel_padding">4dp</dimen>
+    <dimen name="control_section_margin_bottom">2dp</dimen>
+    <dimen name="divider_margin_vertical">2dp</dimen>
+
+    <!-- Compact top bar -->
+    <dimen name="top_bar_padding">4dp</dimen>
+    <dimen name="top_bar_padding_top">20dp</dimen>
+
+    <!-- Spinner -->
+    <dimen name="spinner_min_height">36dp</dimen>
+
+    <!-- SeekBar thumb size -->
+    <dimen name="seekbar_thumb_size">16dp</dimen>
+
+    <!-- Control panel constraints - larger to avoid scrolling -->
+    <dimen name="control_panel_max_height">520dp</dimen>
+    <dimen name="control_panel_min_height">360dp</dimen>
+
+    <!-- VDI display constraints (~20% of vertical space for compact screens) -->
+    <dimen name="vdi_display_max_height">185dp</dimen>
+    <dimen name="vdi_display_min_height">160dp</dimen>
+</resources>

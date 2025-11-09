@@ -41,6 +41,27 @@ class MainActivity : AppCompatActivity() {
     private var lastVibrationTime = 0L
     private val vibrationCooldown = 500L // Minimum 500ms between vibrations
 
+    // Dynamic UI control
+    private var isDetecting = false
+    private var controlPanelVisible = true
+    private val controlPanelHideHandler = Handler(Looper.getMainLooper())
+    private val controlPanelHideDelay = 3000L // 3 seconds
+
+    private fun checkAndHideControlPanel() {
+        // Check if ground balance is actively pumping
+        val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
+        if (gbManager?.isCapturing() == true) {
+            // Don't hide while pumping - reschedule the timeout
+            controlPanelHideHandler.postDelayed(hideControlPanelRunnable, controlPanelHideDelay)
+        } else if (isDetecting && controlPanelVisible) {
+            hideControlPanel()
+        }
+    }
+
+    private val hideControlPanelRunnable = Runnable {
+        checkAndHideControlPanel()
+    }
+
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 1002
@@ -131,6 +152,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.frequencySeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) resetControlPanelTimeout()
                 val maxFreq = progressToFrequency(progress)
                 currentMaxFrequency = maxFreq
                 // Round to nearest 100 Hz for display to avoid 19999 issue
@@ -140,7 +162,9 @@ class MainActivity : AppCompatActivity() {
                 updateIQDemodulator()
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                resetControlPanelTimeout()
+            }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
@@ -153,12 +177,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.volumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) resetControlPanelTimeout()
                 val volumePercent = progress
                 binding.volumeText.text = "$volumePercent%"
                 audioEngine.setTransmitVolume(volumePercent / 100.0)
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                resetControlPanelTimeout()
+            }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
@@ -169,6 +196,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.toneCountSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) resetControlPanelTimeout()
                 val toneCount = progress + MIN_TONE_COUNT
                 binding.toneCountText.text = "$toneCount"
                 currentToneCount = toneCount
@@ -176,7 +204,9 @@ class MainActivity : AppCompatActivity() {
                 updateIQDemodulator()
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                resetControlPanelTimeout()
+            }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
@@ -214,6 +244,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.gbModeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                resetControlPanelTimeout()
                 val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
                 val mode = when (position) {
                     0 -> GroundBalanceMode.OFF
@@ -238,6 +269,7 @@ class MainActivity : AppCompatActivity() {
 
         // Ground Balance Pump Button
         binding.gbPumpButton.setOnClickListener {
+            resetControlPanelTimeout()
             val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
             if (gbManager?.isCapturing() == true) {
                 // Stop pumping
@@ -257,18 +289,22 @@ class MainActivity : AppCompatActivity() {
         // Ground Balance Offset
         binding.gbOffsetSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) resetControlPanelTimeout()
                 // Map 0-100 to -50 to +50
                 val offset = progress - 50
                 binding.gbOffsetText.text = offset.toString()
                 iqDemodulatorDSP?.getGroundBalanceManager()?.setOffset(offset)
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                resetControlPanelTimeout()
+            }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
         // Audio feedback switch
         binding.audioFeedbackSwitch.setOnCheckedChangeListener { _, isChecked ->
+            resetControlPanelTimeout()
             audioToneGenerator?.setEnabled(isChecked)
             if (isChecked) {
                 checkBluetoothPermissions()
@@ -282,6 +318,7 @@ class MainActivity : AppCompatActivity() {
 
         // Haptic feedback switch
         binding.hapticFeedbackSwitch.setOnCheckedChangeListener { _, isChecked ->
+            resetControlPanelTimeout()
             hapticEnabled = isChecked
             if (isChecked) {
                 Toast.makeText(this, "Haptic feedback enabled", Toast.LENGTH_SHORT).show()
@@ -295,12 +332,15 @@ class MainActivity : AppCompatActivity() {
         // Audio feedback volume control
         binding.audioFeedbackVolumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) resetControlPanelTimeout()
                 val volume = progress / 100.0
                 binding.audioFeedbackVolumeText.text = "$progress%"
                 audioToneGenerator?.setVolume(volume)
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                resetControlPanelTimeout()
+            }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
@@ -318,6 +358,9 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize frequency range in audio engine
         audioEngine.setFrequencyRange(FIXED_MIN_FREQUENCY, currentMaxFrequency, currentToneCount)
+
+        // Setup touch detection for dynamic UI
+        setupTouchDetection()
 
         updateStatus("Ready. Press Start to begin.")
         updateIQDemodulator()  // Initialize IQ demodulator
@@ -372,7 +415,10 @@ class MainActivity : AppCompatActivity() {
             val toneText = "TX: $currentToneCount tones (${FIXED_MIN_FREQUENCY.toInt()}-${currentMaxFrequency.toInt()} Hz)"
             val gbStatus = gbManager?.getStatusString() ?: ""
             updateStatus("Running - $toneText, RX: Mono IQ | $gbStatus")
-            Toast.makeText(this, "Audio started", Toast.LENGTH_SHORT).show()
+
+            // Set detecting state and hide control panel after delay
+            isDetecting = true
+            controlPanelHideHandler.postDelayed(hideControlPanelRunnable, controlPanelHideDelay)
         } else {
             updateStatus("Error: Failed to start audio")
             Toast.makeText(this, "Failed to start audio engine", Toast.LENGTH_LONG).show()
@@ -393,7 +439,11 @@ class MainActivity : AppCompatActivity() {
         val gbManager = iqDemodulatorDSP?.getGroundBalanceManager()
         val gbStatus = gbManager?.getStatusString() ?: ""
         updateStatus("Stopped | $gbStatus")
-        Toast.makeText(this, "Audio stopped", Toast.LENGTH_SHORT).show()
+
+        // Stop detecting and show control panel
+        isDetecting = false
+        controlPanelHideHandler.removeCallbacks(hideControlPanelRunnable)
+        showControlPanel()
     }
 
     private fun updateStatus(message: String) {
@@ -665,6 +715,76 @@ class MainActivity : AppCompatActivity() {
                 @Suppress("DEPRECATION")
                 vib.vibrate(durationMs)
             }
+        }
+    }
+
+    /**
+     * Hide control panel (VDI display remains full-screen)
+     */
+    private fun hideControlPanel() {
+        controlPanelVisible = false
+        // Fade out animation
+        binding.controlPanel.animate()
+            .alpha(0f)
+            .setDuration(200)
+            .withEndAction {
+                binding.controlPanel.visibility = android.view.View.GONE
+            }
+            .start()
+    }
+
+    /**
+     * Show control panel overlaying VDI display
+     */
+    private fun showControlPanel() {
+        controlPanelVisible = true
+        binding.controlPanel.visibility = android.view.View.VISIBLE
+        binding.controlPanel.alpha = 0f
+
+        // Fade in animation
+        binding.controlPanel.animate()
+            .alpha(1f)
+            .setDuration(200)
+            .start()
+
+        // Reset timeout if detecting
+        resetControlPanelTimeout()
+    }
+
+    /**
+     * Reset the control panel auto-hide timeout
+     * Call this whenever user interacts with any control
+     */
+    private fun resetControlPanelTimeout() {
+        if (isDetecting && controlPanelVisible) {
+            controlPanelHideHandler.removeCallbacks(hideControlPanelRunnable)
+            controlPanelHideHandler.postDelayed(hideControlPanelRunnable, controlPanelHideDelay)
+        }
+    }
+
+    /**
+     * Setup touch detection to show control panel temporarily during detection
+     */
+    private fun setupTouchDetection() {
+        // Touch anywhere on screen to show controls
+        binding.root.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN && isDetecting && !controlPanelVisible) {
+                showControlPanel()
+                true
+            } else {
+                false
+            }
+        }
+
+        // Reset timeout when user touches or scrolls the control panel
+        binding.controlPanel.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN,
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    resetControlPanelTimeout()
+                }
+            }
+            false  // Let the event propagate to child views
         }
     }
 }

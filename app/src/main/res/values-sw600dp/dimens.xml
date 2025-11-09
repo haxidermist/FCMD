@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Larger spacing for tablets -->
+    <dimen name="spacing_tiny">6dp</dimen>
+    <dimen name="spacing_small">12dp</dimen>
+    <dimen name="spacing_medium">24dp</dimen>
+    <dimen name="spacing_large">32dp</dimen>
+    <dimen name="spacing_xlarge">48dp</dimen>
+
+    <!-- Larger text for tablets -->
+    <dimen name="text_size_tiny">12sp</dimen>
+    <dimen name="text_size_small">14sp</dimen>
+    <dimen name="text_size_normal">16sp</dimen>
+    <dimen name="text_size_medium">18sp</dimen>
+    <dimen name="text_size_large">20sp</dimen>
+
+    <!-- Larger layout dimensions for tablets -->
+    <dimen name="label_min_width">110dp</dimen>
+    <dimen name="label_min_width_small">85dp</dimen>
+    <dimen name="value_text_width">90dp</dimen>
+
+    <!-- Larger buttons for tablets -->
+    <dimen name="button_height_normal">56dp</dimen>
+    <dimen name="button_height_large">72dp</dimen>
+    <dimen name="button_min_height">56dp</dimen>
+
+    <!-- Larger debug panel heights -->
+    <dimen name="waveform_height">280dp</dimen>
+    <dimen name="spectrum_height">280dp</dimen>
+
+    <!-- More spacious control panel -->
+    <dimen name="control_panel_padding">24dp</dimen>
+    <dimen name="control_section_margin_bottom">12dp</dimen>
+    <dimen name="divider_margin_vertical">12dp</dimen>
+
+    <!-- Larger top bar -->
+    <dimen name="top_bar_padding">12dp</dimen>
+    <dimen name="top_bar_padding_top">40dp</dimen>
+
+    <!-- Spinner -->
+    <dimen name="spinner_min_height">56dp</dimen>
+
+    <!-- SeekBar thumb size -->
+    <dimen name="seekbar_thumb_size">24dp</dimen>
+
+    <!-- Control panel constraints - tablets have plenty of space -->
+    <dimen name="control_panel_max_height">600dp</dimen>
+    <dimen name="control_panel_min_height">450dp</dimen>
+
+    <!-- VDI display constraints (~20% of vertical space for tablets) -->
+    <dimen name="vdi_display_max_height">245dp</dimen>
+    <dimen name="vdi_display_min_height">220dp</dimen>
+</resources>
