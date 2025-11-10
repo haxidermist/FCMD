@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     private var dspProcessor: DspProcessor? = null
     private var iqDemodulatorDSP: IQDemodulatorDSP? = null
     private var currentToneCount = 24  // Start with 24 tones for VDI
-    private var currentMaxFrequency = 20000.0
+    private var currentMaxFrequency = 10000.0  // Reduced for phase stability testing
     private var debugPanelVisible = false
 
     // Audio feedback components
@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 1002
         private const val FIXED_MIN_FREQUENCY = 1000.0 // Fixed lowest frequency
         private const val MIN_MAX_FREQUENCY = 2000 // Minimum selectable max frequency
-        private const val MAX_MAX_FREQUENCY = 20000 // Maximum selectable max frequency
+        private const val MAX_MAX_FREQUENCY = 10000 // Maximum selectable max frequency (reduced for testing)
         private const val MIN_TONE_COUNT = 2
         private const val MAX_TONE_COUNT = 24
     }
@@ -144,9 +144,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Max Frequency control (logarithmic scale: 2000-20000 Hz)
+        // Max Frequency control (logarithmic scale: 2000-10000 Hz for testing)
         binding.frequencySeekBar.max = 1000
-        val defaultMaxFreq = 20000.0
+        val defaultMaxFreq = 10000.0  // Reduced to 10 kHz for phase stability testing
         currentMaxFrequency = defaultMaxFreq
         binding.frequencySeekBar.progress = frequencyToProgress(defaultMaxFreq)
 
@@ -191,7 +191,8 @@ class MainActivity : AppCompatActivity() {
 
         // Tone count control
         binding.toneCountSeekBar.max = MAX_TONE_COUNT - MIN_TONE_COUNT
-        binding.toneCountSeekBar.progress = MAX_TONE_COUNT - MIN_TONE_COUNT // Start with 24 tones
+        currentToneCount = 8  // Start with 8 tones for phase stability testing
+        binding.toneCountSeekBar.progress = 8 - MIN_TONE_COUNT  // Set slider to 8 tones
         binding.toneCountText.text = "$currentToneCount"
 
         binding.toneCountSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
