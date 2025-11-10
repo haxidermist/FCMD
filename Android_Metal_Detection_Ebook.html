@@ -840,6 +840,422 @@ android.os.Process.setThreadPriority(
     <p>The main limitations are transmit power (limiting depth) and audio latency (limiting update rate), but these are acceptable tradeoffs for the advantages gained.</p>
 </div>
 
+<!-- CHAPTER 4 -->
+<div class="chapter page-break-before" id="ch4">
+    <h1><span class="chapter-number">Chapter 4</span><br>Audio-Based Detection Architecture</h1>
+
+    <h2>4.1 System Overview</h2>
+    <p>The FCMD metal detector uses the smartphone's audio subsystem as both signal generator and data acquisition system. Audio output drives the transmit coil, while audio input captures the received signal from the receive coil. This approach leverages existing high-quality hardware without requiring custom electronics.</p>
+
+    <h2>4.2 Hardware Configuration</h2>
+    <p>Modern smartphones increasingly lack the traditional 3.5mm headphone jack. The FCMD system can be configured using either a built-in jack (if available) or an external USB audio adapter. The USB adapter approach is actually preferred for several reasons:</p>
+
+    <ul>
+        <li><strong>Electrical isolation:</strong> Separates coil circuitry from phone's internal electronics</li>
+        <li><strong>Better audio quality:</strong> External DACs often have lower noise floors</li>
+        <li><strong>Ground loop control:</strong> Easier to manage ground connections</li>
+        <li><strong>Simultaneous I/O:</strong> Guaranteed support for concurrent playback and recording</li>
+    </ul>
+
+    <h3>4.2.1 USB Hub Configuration</h3>
+    <p>For devices with USB-C ports only, a powered USB hub and USB audio dongle provide the interface:</p>
+
+    <div class="figure">
+        <svg width="700" height="650" viewBox="0 0 700 650" xmlns="http://www.w3.org/2000/svg">
+            <!-- Title -->
+            <text x="350" y="25" text-anchor="middle" font-size="18" font-weight="bold" fill="#000">FCMD Hardware Setup - USB Audio Configuration</text>
+
+            <!-- Android Phone -->
+            <rect x="280" y="50" width="140" height="200" rx="15" fill="#1976d2" stroke="#0d47a1" stroke-width="3"/>
+            <rect x="295" y="70" width="110" height="150" rx="5" fill="#bbdefb" stroke="#1976d2" stroke-width="2"/>
+            <circle cx="350" cy="235" r="12" fill="#0d47a1" stroke="#1976d2" stroke-width="2"/>
+            <text x="350" y="275" text-anchor="middle" font-size="14" font-weight="bold">Android Phone</text>
+            <text x="350" y="290" text-anchor="middle" font-size="11" fill="#666">(USB-C Port)</text>
+
+            <!-- USB-C Cable -->
+            <line x1="350" y1="250" x2="350" y2="310" stroke="#333" stroke-width="4"/>
+            <text x="370" y="280" font-size="10" fill="#666">USB-C</text>
+
+            <!-- USB Hub -->
+            <rect x="280" y="310" width="140" height="80" rx="8" fill="#f5f5f5" stroke="#333" stroke-width="3"/>
+            <text x="350" y="340" text-anchor="middle" font-size="14" font-weight="bold">Powered USB Hub</text>
+            <text x="350" y="355" text-anchor="middle" font-size="10" fill="#666">(5V/2A Recommended)</text>
+            <circle cx="310" cy="370" r="4" fill="#388e3c"/>
+            <circle cx="330" cy="370" r="4" fill="#388e3c"/>
+            <circle cx="350" cy="370" r="4" fill="#388e3c"/>
+            <circle cx="370" cy="370" r="4" fill="#d32f2f"/>
+            <circle cx="390" cy="370" r="4" fill="#666"/>
+
+            <!-- USB-A Cable to Sound Dongle -->
+            <line x1="350" y1="390" x2="350" y2="430" stroke="#333" stroke-width="3"/>
+            <text x="370" y="410" font-size="10" fill="#666">USB-A</text>
+
+            <!-- USB Sound Dongle -->
+            <rect x="230" y="430" width="240" height="120" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="3"/>
+            <text x="350" y="455" text-anchor="middle" font-size="14" font-weight="bold">USB Audio Dongle (DAC)</text>
+            <text x="350" y="470" text-anchor="middle" font-size="10" fill="#666">External Sound Card</text>
+
+            <!-- 3.5mm jacks inside dongle -->
+            <g id="audio-jacks">
+                <circle cx="270" cy="510" r="18" fill="#fff" stroke="#333" stroke-width="2"/>
+                <circle cx="270" cy="510" r="12" fill="#333"/>
+                <circle cx="270" cy="510" r="5" fill="#666"/>
+                <text x="270" y="540" text-anchor="middle" font-size="10" font-weight="bold">L Out</text>
+
+                <circle cx="350" cy="510" r="18" fill="#fff" stroke="#f57c00" stroke-width="2"/>
+                <circle cx="350" cy="510" r="12" fill="#f57c00"/>
+                <circle cx="350" cy="510" r="5" fill="#ff6f00"/>
+                <text x="350" y="540" text-anchor="middle" font-size="10" font-weight="bold">L In</text>
+
+                <circle cx="430" cy="510" r="18" fill="#fff" stroke="#333" stroke-width="2"/>
+                <circle cx="430" cy="510" r="12" fill="#333"/>
+                <circle cx="430" cy="510" r="5" fill="#666"/>
+                <text x="430" y="540" text-anchor="middle" font-size="10" font-weight="bold">R Out</text>
+            </g>
+
+            <!-- Connection lines -->
+            <!-- Left Out to TX Coil -->
+            <line x1="270" y1="550" x2="120" y2="600" stroke="#1976d2" stroke-width="3"/>
+            <text x="180" y="570" font-size="10" fill="#1976d2" font-weight="bold">Left Channel</text>
+
+            <!-- Line In from RX Coil -->
+            <line x1="350" y1="550" x2="350" y2="600" stroke="#f57c00" stroke-width="3"/>
+            <text x="360" y="575" font-size="10" fill="#f57c00" font-weight="bold">Mic/Line In</text>
+
+            <!-- Right Out to Headphones -->
+            <line x1="430" y1="550" x2="580" y2="600" stroke="#666" stroke-width="3"/>
+            <text x="490" y="570" font-size="10" fill="#666" font-weight="bold">Right Channel</text>
+
+            <!-- TX Coil -->
+            <g id="tx-coil">
+                <ellipse cx="80" cy="610" rx="35" ry="45" fill="none" stroke="#1976d2" stroke-width="4"/>
+                <ellipse cx="80" cy="610" rx="28" ry="38" fill="none" stroke="#1976d2" stroke-width="3"/>
+                <ellipse cx="80" cy="610" rx="21" ry="31" fill="none" stroke="#1976d2" stroke-width="2"/>
+                <text x="80" y="625" text-anchor="middle" font-size="12" font-weight="bold" fill="#1976d2">TX</text>
+            </g>
+            <text x="80" y="645" text-anchor="middle" font-size="11" font-weight="bold">Transmit Coil</text>
+            <text x="80" y="657" text-anchor="middle" font-size="9" fill="#666">(16-32Ω)</text>
+
+            <!-- RX Coil -->
+            <g id="rx-coil">
+                <ellipse cx="350" cy="610" rx="35" ry="45" fill="none" stroke="#f57c00" stroke-width="4"/>
+                <ellipse cx="350" cy="610" rx="28" ry="38" fill="none" stroke="#f57c00" stroke-width="3"/>
+                <ellipse cx="350" cy="610" rx="21" ry="31" fill="none" stroke="#f57c00" stroke-width="2"/>
+                <text x="350" y="625" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57c00">RX</text>
+            </g>
+            <text x="350" y="645" text-anchor="middle" font-size="11" font-weight="bold">Receive Coil</text>
+            <text x="350" y="657" text-anchor="middle" font-size="9" fill="#666">(High-Z)</text>
+
+            <!-- Headphones -->
+            <g id="headphones">
+                <circle cx="560" cy="610" r="20" fill="#666" stroke="#333" stroke-width="3"/>
+                <circle cx="600" cy="610" r="20" fill="#666" stroke="#333" stroke-width="3"/>
+                <path d="M 560 590 Q 580 575 600 590" fill="none" stroke="#333" stroke-width="3"/>
+                <circle cx="560" cy="610" r="12" fill="#999"/>
+                <circle cx="600" cy="610" r="12" fill="#999"/>
+            </g>
+            <text x="580" y="645" text-anchor="middle" font-size="11" font-weight="bold">Headphones</text>
+            <text x="580" y="657" text-anchor="middle" font-size="9" fill="#666">(Audio Monitor)</text>
+        </svg>
+        <div class="figure-caption">Figure 4.1: Complete hardware setup using USB hub and external audio dongle for devices without headphone jacks</div>
+    </div>
+
+    <h3>4.2.2 Signal Flow Diagram</h3>
+    <p>The complete signal path from generation to analysis:</p>
+
+    <div class="figure">
+        <svg width="700" height="500" viewBox="0 0 700 500" xmlns="http://www.w3.org/2000/svg">
+            <!-- Title -->
+            <text x="350" y="25" text-anchor="middle" font-size="18" font-weight="bold" fill="#000">Signal Flow Architecture</text>
+
+            <!-- App generates signal -->
+            <rect x="250" y="50" width="200" height="60" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+            <text x="350" y="75" text-anchor="middle" font-size="13" font-weight="bold">MultiToneGenerator</text>
+            <text x="350" y="92" text-anchor="middle" font-size="10">1-24 Frequencies</text>
+            <text x="350" y="105" text-anchor="middle" font-size="9" fill="#666">(1 kHz - 20 kHz)</text>
+
+            <!-- Arrow down -->
+            <polygon points="350,110 350,135 360,125 340,125" fill="#1976d2"/>
+
+            <!-- Left Out -->
+            <rect x="50" y="135" width="150" height="50" rx="8" fill="#bbdefb" stroke="#1976d2" stroke-width="2"/>
+            <text x="125" y="157" text-anchor="middle" font-size="12" font-weight="bold">L Out (TX Signal)</text>
+            <text x="125" y="173" text-anchor="middle" font-size="9" fill="#666">Stereo Left Channel</text>
+
+            <!-- Right Out -->
+            <rect x="500" y="135" width="150" height="50" rx="8" fill="#f5f5f5" stroke="#666" stroke-width="2"/>
+            <text x="575" y="157" text-anchor="middle" font-size="12" font-weight="bold">R Out (Audio FB)</text>
+            <text x="575" y="173" text-anchor="middle" font-size="9" fill="#666">Target Audio Tones</text>
+
+            <!-- Arrows -->
+            <polygon points="350,110 125,135 135,130 135,140" fill="#1976d2"/>
+            <polygon points="350,110 575,135 565,130 565,140" fill="#666"/>
+
+            <!-- TX Coil EM Field -->
+            <ellipse cx="125" cy="235" rx="40" ry="50" fill="none" stroke="#1976d2" stroke-width="3"/>
+            <text x="125" y="240" text-anchor="middle" font-size="11" font-weight="bold" fill="#1976d2">TX Coil</text>
+            <polygon points="125,185 125,210 135,200 115,200" fill="#1976d2"/>
+
+            <!-- Headphones -->
+            <circle cx="555" cy="235" r="25" fill="#666" stroke="#333" stroke-width="2"/>
+            <circle cx="595" cy="235" r="25" fill="#666" stroke="#333" stroke-width="2"/>
+            <path d="M 555 210 Q 575 195 595 210" fill="none" stroke="#333" stroke-width="2"/>
+            <polygon points="575,185 575,210 585,200 565,200" fill="#666"/>
+
+            <!-- EM Field waves -->
+            <path d="M 165 235 Q 200 220 235 235 Q 270 250 305 235 Q 340 220 375 235"
+                  fill="none" stroke="#f57c00" stroke-width="2" stroke-dasharray="5,5"/>
+            <text x="270" y="215" text-anchor="middle" font-size="10" fill="#f57c00" font-weight="bold">EM Field (1-20 kHz)</text>
+
+            <!-- Metal Target -->
+            <rect x="235" y="215" width="50" height="40" rx="5" fill="#757575" stroke="#333" stroke-width="3"/>
+            <text x="260" y="240" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Metal</text>
+
+            <!-- Eddy currents symbol -->
+            <circle cx="260" cy="235" r="15" fill="none" stroke="#d32f2f" stroke-width="2"/>
+            <path d="M 268 227 L 275 220" stroke="#d32f2f" stroke-width="2" marker-end="url(#arrowRed)"/>
+            <defs>
+                <marker id="arrowRed" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                    <polygon points="0 0, 6 3, 0 6" fill="#d32f2f"/>
+                </marker>
+            </defs>
+            <text x="260" y="270" text-anchor="middle" font-size="9" fill="#d32f2f">Eddy Currents</text>
+
+            <!-- RX Coil -->
+            <ellipse cx="375" cy="325" rx="40" ry="50" fill="none" stroke="#f57c00" stroke-width="3"/>
+            <text x="375" y="330" text-anchor="middle" font-size="11" font-weight="bold" fill="#f57c00">RX Coil</text>
+
+            <!-- Response arrow -->
+            <path d="M 305 235 Q 340 280 375 305" fill="none" stroke="#f57c00" stroke-width="2"/>
+            <polygon points="375,305 370,295 365,305" fill="#f57c00"/>
+            <text x="325" y="270" text-anchor="middle" font-size="9" fill="#f57c00">Target Response</text>
+
+            <!-- Line In -->
+            <rect x="300" y="395" width="150" height="50" rx="8" fill="#fff3e0" stroke="#f57c00" stroke-width="2"/>
+            <text x="375" y="415" text-anchor="middle" font-size="12" font-weight="bold">L In (RX Signal)</text>
+            <text x="375" y="431" text-anchor="middle" font-size="9" fill="#666">Mono Microphone Input</text>
+            <polygon points="375,375 375,395 385,390 365,390" fill="#f57c00"/>
+
+            <!-- IQ Demodulation -->
+            <rect x="275" y="465" width="200" height="30" rx="8" fill="#e8f5e9" stroke="#388e3c" stroke-width="2"/>
+            <text x="375" y="485" text-anchor="middle" font-size="12" font-weight="bold">IQ Demodulator (24×)</text>
+            <polygon points="375,445 375,465 385,460 365,460" fill="#388e3c"/>
+        </svg>
+        <div class="figure-caption">Figure 4.2: Signal flow from generation through target interaction to digital processing</div>
+    </div>
+
+    <h2>4.3 Channel Separation Strategy</h2>
+    <p>The FCMD architecture uses stereo audio output creatively:</p>
+
+    <table>
+        <tr>
+            <th>Channel</th>
+            <th>Purpose</th>
+            <th>Signal Content</th>
+        </tr>
+        <tr>
+            <td><strong>Left Output</strong></td>
+            <td>Transmit Signal</td>
+            <td>Multi-tone composite (1-24 frequencies)</td>
+        </tr>
+        <tr>
+            <td><strong>Right Output</strong></td>
+            <td>Audio Feedback</td>
+            <td>Target-responsive audio tones for operator</td>
+        </tr>
+        <tr>
+            <td><strong>Mono Input</strong></td>
+            <td>Receive Signal</td>
+            <td>Captured electromagnetic response</td>
+        </tr>
+    </table>
+
+    <p>This separation provides several benefits:</p>
+    <ul>
+        <li>Operator can hear audio feedback without it interfering with RX signal</li>
+        <li>Audio feedback can use different frequencies than TX (no crosstalk)</li>
+        <li>Simple single-cable headphone connection for monitoring</li>
+        <li>TX signal remains perfectly clean without mixing</li>
+    </ul>
+
+    <h2>4.4 Hardware Requirements</h2>
+
+    <h3>4.4.1 USB Audio Dongle Specifications</h3>
+    <div class="tip-box">
+        <strong>Recommended Audio Dongle Specs:</strong>
+        <ul>
+            <li>USB Audio Class compliant (no special drivers needed)</li>
+            <li>Minimum 16-bit/44.1 kHz (24-bit/48 kHz preferred)</li>
+            <li>Separate microphone/line input (not combined TRRS)</li>
+            <li>Stereo output (3.5mm jack)</li>
+            <li>Low output impedance (< 2Ω for good coil damping)</li>
+            <li>Cost: $10-30 typical</li>
+        </ul>
+    </div>
+
+    <h3>4.4.2 USB Hub Requirements</h3>
+    <div class="warning-box">
+        <strong>Important:</strong> Use a <strong>powered</strong> USB hub (external power adapter). Phone USB-C ports may not provide sufficient current for both phone charging and USB audio dongle operation. A powered hub ensures stable operation.
+        <ul>
+            <li>Minimum 2A @ 5V capacity</li>
+            <li>USB 2.0 sufficient (audio doesn't need USB 3.0 bandwidth)</li>
+            <li>Multiple ports allow connection of additional sensors</li>
+        </ul>
+    </div>
+
+    <h3>4.4.3 Coil Specifications</h3>
+
+    <h4>Transmit Coil</h4>
+    <ul>
+        <li><strong>Impedance:</strong> 16-32Ω (matches headphone output)</li>
+        <li><strong>Inductance:</strong> 100-500 μH typical</li>
+        <li><strong>Diameter:</strong> 6-10 inches (larger = more depth, less sensitivity)</li>
+        <li><strong>Wire:</strong> 26-30 AWG magnet wire, 50-100 turns</li>
+        <li><strong>Construction:</strong> Circular loop, rigidly mounted</li>
+    </ul>
+
+    <h4>Receive Coil</h4>
+    <ul>
+        <li><strong>Configuration:</strong> Can be same as TX (monostatic) or separate (bistatic)</li>
+        <li><strong>Connection:</strong> Connect to microphone input via 3.5mm plug</li>
+        <li><strong>Amplification:</strong> May need small preamp for weak signals</li>
+        <li><strong>Shielding:</strong> Optional Faraday shield to reduce capacitive coupling</li>
+    </ul>
+
+    <div class="example-box">
+        <strong>Simple Coil Construction:</strong><br>
+        <ol>
+            <li>Wind 80 turns of 28 AWG magnet wire on 8" diameter form</li>
+            <li>Measure DC resistance: should be 20-30Ω</li>
+            <li>Connect to 3.5mm stereo plug (tip+ring paralleled for TX)</li>
+            <li>Secure coil with epoxy or tape to maintain circular shape</li>
+            <li>Mount on non-metallic handle (PVC pipe works well)</li>
+        </ol>
+        Expected performance: 4-6" depth on coin-sized targets
+    </example-box>
+
+    <h2>4.5 Signal Levels and Gain Structure</h2>
+
+    <h3>4.5.1 Transmit Level</h3>
+    <p>The app generates multi-tone signals at adjustable volume (0-100%). Optimal level depends on coil impedance and desired field strength:</p>
+
+    <div class="formula">
+        Power = (Volume² × V_max²) / Z_coil<br>
+        where V_max ≈ 1.0V RMS (typical headphone output)
+    </div>
+
+    <p>Example: 50% volume into 32Ω coil:</p>
+    <div class="formula">
+        P = (0.5² × 1.0²) / 32 = 0.0078W ≈ 8mW per frequency<br>
+        Total (8 tones) ≈ 60mW
+    </div>
+
+    <h3>4.5.2 Receive Sensitivity</h3>
+    <p>Microphone inputs typically have high gain (20-40 dB) and expect 10-100 mV signals. Our coil output may be much smaller (100 μV - 10 mV), requiring attention to noise floor:</p>
+
+    <table>
+        <tr>
+            <th>Signal Condition</th>
+            <th>Expected Amplitude</th>
+            <th>S/N Ratio</th>
+        </tr>
+        <tr>
+            <td>Strong target (surface)</td>
+            <td>1-10 mV</td>
+            <td>40-60 dB</td>
+        </tr>
+        <tr>
+            <td>Medium target (4")</td>
+            <td>100-1000 μV</td>
+            <td>20-40 dB</td>
+        </tr>
+        <tr>
+            <td>Weak target (6-8")</td>
+            <td>10-100 μV</td>
+            <td>0-20 dB</td>
+        </tr>
+    </table>
+
+    <p>The IQ demodulation process includes low-pass filtering that improves S/N ratio by approximately 10-15 dB, making weak signals detectable even near the noise floor.</p>
+
+    <h2>4.6 Practical Connection Tips</h2>
+
+    <h3>4.6.1 Avoiding Ground Loops</h3>
+    <p>Ground loops occur when multiple ground paths exist between equipment. Symptoms include 50/60 Hz hum and noise. Solutions:</p>
+    <ul>
+        <li>Use USB audio dongle (isolates coils from phone ground)</li>
+        <li>Battery-power the phone (disconnect charger during detection)</li>
+        <li>Keep coil cables twisted pair (reduces loop area)</li>
+        <li>Use shielded cable with shield grounded at one end only</li>
+    </ul>
+
+    <h3>4.6.2 Cable Recommendations</h3>
+    <div class="info-box">
+        <strong>Cable Best Practices:</strong>
+        <ul>
+            <li><strong>USB cables:</strong> Keep < 3 feet, use high-quality shielded cables</li>
+            <li><strong>Audio cables:</strong> Twisted pair or shielded for RX coil (reduces noise pickup)</li>
+            <li><strong>TX coil cable:</strong> Can be unshielded, heavier gauge better (lower resistance)</li>
+            <li><strong>Connectors:</strong> Use locking 3.5mm connectors if available (prevent disconnection during use)</li>
+        </ul>
+    </div>
+
+    <h3>4.6.3 Testing the Hardware Setup</h3>
+    <p>Before field use, verify your hardware setup:</p>
+
+    <ol>
+        <li><strong>Audio Output Test:</strong> Connect headphones to Right Out, launch app, verify multi-tone signal audible</li>
+        <li><strong>Loopback Test:</strong> Connect Left Out to Line In directly (no coils), verify signal detected with high amplitude</li>
+        <li><strong>Coil Continuity:</strong> Measure DC resistance of each coil (should be 10-100Ω)</li>
+        <li><strong>Air Test:</strong> With coils connected, wave metal object near RX coil, verify amplitude change</li>
+        <li><strong>Phase Test:</strong> Check that ferrous metal (iron nail) shows different phase slope than non-ferrous (copper penny)</li>
+    </ol>
+
+    <h2>4.7 Alternative Configurations</h2>
+
+    <h3>4.7.1 Built-in Headphone Jack</h3>
+    <p>If your phone has a 3.5mm jack, you can connect coils directly:</p>
+    <ul>
+        <li><strong>Advantage:</strong> Simpler, no external hardware needed</li>
+        <li><strong>Disadvantage:</strong> Must use TRRS splitter to separate mic input from headphone output</li>
+        <li><strong>Disadvantage:</strong> May have more ground loop issues</li>
+    </ul>
+
+    <h3>4.7.2 Bluetooth Audio</h3>
+    <div class="warning-box">
+        <strong>Not Recommended:</strong> Bluetooth audio introduces 100-200 ms latency, which breaks the coherent relationship between TX and RX signals. Phase measurements become unreliable. Only use Bluetooth for the monitoring headphones (Right Out), never for TX/RX coils.
+    </div>
+
+    <h3>4.7.3 External Amplifier</h3>
+    <p>For larger coils or greater depth, consider adding an audio amplifier:</p>
+    <ul>
+        <li>Connect between Left Out and TX coil</li>
+        <li>Use Class D amplifier for efficiency (5-10W typical)</li>
+        <li>Add current limiting to protect amplifier from DC</li>
+        <li>Expected depth improvement: 30-50% vs. direct connection</li>
+    </ul>
+
+    <h2>4.8 Summary</h2>
+    <p>The audio-based architecture provides a simple yet powerful interface between smartphone and metal detection hardware:</p>
+
+    <ul>
+        <li><strong>USB audio dongle</strong> isolates coils from phone electronics</li>
+        <li><strong>Stereo output separation</strong> allows simultaneous TX signal and audio feedback</li>
+        <li><strong>Standard audio interfaces</strong> require no custom drivers or rooting</li>
+        <li><strong>Flexible configuration</strong> supports various coil designs and amplification</li>
+    </ul>
+
+    <p>With proper hardware setup, the FCMD system can achieve detection depths of 4-8 inches on coin-sized targets, limited primarily by smartphone transmit power rather than signal processing capability.</p>
+</div>
+
+<!-- PART II: SIGNAL GENERATION AND CAPTURE -->
+<div class="page-break">
+    <h1>PART II: SIGNAL GENERATION AND CAPTURE</h1>
+    <p style="text-align: center; font-style: italic; font-size: 14pt; margin-top: 40px;">
+        Detailed examination of audio signal generation, real-time capture, and initial processing stages
+    </p>
+</div>
+
 <!-- Continue with remaining chapters... Due to length, I'll include a representative sample of chapters and then complete key sections -->
 
 <!-- CHAPTER 8 (Advanced DSP section) -->
