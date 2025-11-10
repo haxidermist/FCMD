@@ -20,7 +20,7 @@ class AudioEngine(
     companion object {
         private const val TAG = "AudioEngine"
         private const val CHANNEL_CONFIG_OUT = AudioFormat.CHANNEL_OUT_STEREO  // Stereo: L=TX R=TargetAudio
-        private const val CHANNEL_CONFIG_IN = AudioFormat.CHANNEL_IN_MONO     // Mono: Left channel only
+        private const val CHANNEL_CONFIG_IN = AudioFormat.CHANNEL_IN_STEREO   // Stereo: L=RX R=TX_Reference
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 
         // Try these sample rates in order of preference
@@ -310,12 +310,8 @@ class AudioEngine(
                 buffer[i * 2 + 1] = rightValue
             }
 
-            // Send to spectrum analyzer every 5 frames (~10 Hz update rate)
-            frameCount++
-            if (frameCount >= 5 && spectrumCallback != null) {
-                spectrumCallback?.invoke(floatBuffer, sampleRate)
-                frameCount = 0
-            }
+            // Spectrum analyzer moved to record loop to show RX signal
+            // (This was previously showing TX signal, now shows received signal)
 
             // Write stereo output to audio
             audioTrack?.write(buffer, 0, buffer.size)
@@ -325,35 +321,51 @@ class AudioEngine(
     }
 
     /**
-     * Record loop - captures mono audio (left channel) and processes it
+     * Record loop - captures stereo audio (L=RX signal, R=TX reference) and processes it
      */
     private fun recordLoop() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
 
-        val bufferSize = minBufferSizeIn / 2 // 16-bit samples
+        val bufferSize = minBufferSizeIn / 2 // 16-bit samples (stereo interleaved)
         val buffer = ShortArray(bufferSize)
-        val floatBuffer = FloatArray(bufferSize)
+        val monoFrames = bufferSize / 2  // Number of L/R pairs
+        val leftBuffer = FloatArray(monoFrames)
+        val rightBuffer = FloatArray(monoFrames)
+        var frameCount = 0
 
-        Log.d(TAG, "Record loop started (MONO - Left channel only), buffer size: $bufferSize samples")
+        Log.d(TAG, "Record loop started (STEREO - L=RX, R=TX_Ref), buffer size: $bufferSize samples, frames: $monoFrames")
 
         while (isRecording.get()) {
             val readSamples = audioRecord?.read(buffer, 0, buffer.size) ?: 0
 
             if (readSamples > 0) {
-                // Convert to float for processing and display
-                for (i in 0 until readSamples) {
-                    floatBuffer[i] = buffer[i].toFloat() / Short.MAX_VALUE
+                val frames = readSamples / 2
+
+                // De-interleave stereo: L, R, L, R... → separate L and R channels
+                for (i in 0 until frames) {
+                    leftBuffer[i] = buffer[i * 2].toFloat() / Short.MAX_VALUE       // L = RX signal
+                    rightBuffer[i] = buffer[i * 2 + 1].toFloat() / Short.MAX_VALUE  // R = TX reference
                 }
 
-                // Apply DSP processing to mono channel
-                val processed = dspProcessor?.processMono(floatBuffer.copyOf(readSamples), sampleRate)
-                    ?: floatBuffer.copyOf(readSamples)
+                // Send LEFT (RX) to spectrum analyzer every 5 frames (~10 Hz update rate)
+                frameCount++
+                if (frameCount >= 5 && spectrumCallback != null) {
+                    spectrumCallback?.invoke(leftBuffer.copyOf(frames), sampleRate)
+                    frameCount = 0
+                }
 
-                // Duplicate mono to stereo for waveform display (L=signal, R=signal)
-                val displayData = FloatArray(readSamples * 2).apply {
-                    for (i in 0 until readSamples) {
-                        this[i * 2] = processed[i]      // Left
-                        this[i * 2 + 1] = processed[i]  // Right (duplicate)
+                // Apply DSP processing with stereo input (L=RX, R=TX_Ref)
+                val (processedLeft, processedRight) = dspProcessor?.processStereo(
+                    leftBuffer.copyOf(frames),
+                    rightBuffer.copyOf(frames),
+                    sampleRate
+                ) ?: Pair(leftBuffer.copyOf(frames), rightBuffer.copyOf(frames))
+
+                // Interleave for waveform display (L=processed RX, R=TX reference)
+                val displayData = FloatArray(frames * 2).apply {
+                    for (i in 0 until frames) {
+                        this[i * 2] = processedLeft[i]      // Left = RX
+                        this[i * 2 + 1] = processedRight[i] // Right = TX ref
                     }
                 }
 

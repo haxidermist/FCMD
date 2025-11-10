@@ -523,10 +523,10 @@ class MainActivity : AppCompatActivity() {
             appendLine()
             appendLine("Tones: ${frequencies.size}")
             appendLine("Range: ${minFreq.toInt()}-${maxFreq.toInt()} Hz")
-            appendLine("Update: ~40 Hz | Filter: IIR")
+            appendLine("Update: ~5 Hz | Filter: IIR")
             appendLine()
             appendLine("Press START for IQ analysis...")
-            appendLine("Green spectrum overlay shows TX.")
+            appendLine("Green spectrum overlay shows RX.")
         }
 
         val statusText = "$currentToneCount tones (${FIXED_MIN_FREQUENCY.toInt()}-${currentMaxFrequency.toInt()} Hz) - IQ Mode"
@@ -563,7 +563,7 @@ class MainActivity : AppCompatActivity() {
         if (debugPanelVisible) {
             val text = buildString {
                 appendLine("━━━ IQ ANALYSIS (MONO) ━━━")
-                appendLine("Sample Rate: ${sampleRate/1000}kHz | Update: 40Hz")
+                appendLine("Sample Rate: ${sampleRate/1000}kHz | Update: 5Hz")
                 appendLine(gbStatus)
 
                 // Show VDI prominently if available

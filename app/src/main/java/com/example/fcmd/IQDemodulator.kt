@@ -66,13 +66,19 @@ private class SingleToneDemodulator(
     private val sampleRate: Int
 ) {
     private var phase = 0.0
-    private val phaseIncrement = 2.0 * PI * frequency / sampleRate
+    private var phaseIncrement = 2.0 * PI * frequency / sampleRate
 
     // Single-pole IIR filter (much faster than moving average)
     // Alpha determines filter cutoff: smaller = more filtering, slower response
-    private val filterAlpha = 0.01  // ~10 Hz cutoff for fast tracking
+    private val filterAlpha = 0.002  // ~14 Hz cutoff, heavy integration for noise reduction
     private var iFiltered = 0.0
     private var qFiltered = 0.0
+
+    // Frequency tracking to compensate for clock drift between TX and RX
+    private var lastPhase = 0.0
+    private var phaseUnwrapped = 0.0
+    private val frequencyTrackingAlpha = 0.0001  // Very slow frequency correction
+    private var sampleCount = 0
 
     fun analyze(samples: FloatArray): ToneAnalysis {
         // Process all samples with IIR low-pass filter
@@ -93,7 +99,39 @@ private class SingleToneDemodulator(
 
         // Calculate amplitude and phase from filtered I/Q
         val amplitude = sqrt(iFiltered * iFiltered + qFiltered * qFiltered) * 2.0  // *2 due to mixing
-        val phaseAngle = atan2(qFiltered, iFiltered)
+        var phaseAngle = atan2(qFiltered, iFiltered)
+
+        // Frequency tracking: detect phase rotation and adjust frequency
+        // This compensates for clock drift between USB audio dongle and phone
+        sampleCount++
+        if (sampleCount > 100) {  // Start tracking after initial settling
+            // Unwrap phase (detect ±180° wraps)
+            val phaseDiff = phaseAngle - lastPhase
+            when {
+                phaseDiff > PI -> phaseUnwrapped += phaseDiff - 2.0 * PI
+                phaseDiff < -PI -> phaseUnwrapped += phaseDiff + 2.0 * PI
+                else -> phaseUnwrapped += phaseDiff
+            }
+
+            // If phase is drifting significantly, adjust frequency slightly
+            // Drift rate in radians per buffer (~43ms @ 1920 samples)
+            val driftRate = phaseUnwrapped / sampleCount
+            if (kotlin.math.abs(driftRate) > 0.0001) {  // More than 0.01 rad/buffer = ~1.5 Hz error
+                // Adjust phase increment to track actual frequency
+                val frequencyCorrection = driftRate * (sampleRate.toDouble() / samples.size) / (2.0 * PI)
+                phaseIncrement += frequencyTrackingAlpha * frequencyCorrection
+
+                // Log frequency tracking (throttled - only every 1000 buffers)
+                if (sampleCount % 1000 == 0) {
+                    val actualFreq = (phaseIncrement * sampleRate) / (2.0 * PI)
+                    val freqError = actualFreq - frequency
+                    android.util.Log.d("IQDemodulator",
+                        String.format("Freq tracking: %.0f Hz -> %.2f Hz (error: %.2f Hz)",
+                        frequency, actualFreq, freqError))
+                }
+            }
+        }
+        lastPhase = phaseAngle
 
         return ToneAnalysis(
             frequency = frequency,
@@ -108,6 +146,10 @@ private class SingleToneDemodulator(
         phase = 0.0
         iFiltered = 0.0
         qFiltered = 0.0
+        lastPhase = 0.0
+        phaseUnwrapped = 0.0
+        sampleCount = 0
+        phaseIncrement = 2.0 * PI * frequency / sampleRate  // Reset to nominal frequency
     }
 }
 
@@ -139,13 +181,26 @@ private class FixedSizeBuffer(private val size: Int) {
 }
 
 /**
- * DSP processor that performs IQ demodulation in real-time (MONO channel)
+ * DSP processor that performs IQ demodulation in real-time
+ *
+ * COHERENT DEMODULATION MODE (Stereo Input):
+ * - Left Input (Lin):  RX coil signal
+ * - Right Input (Rin): TX reference signal (looped back from Lout)
+ *
+ * By demodulating both RX and TX_ref with the same local oscillator, then computing
+ * their phase/amplitude relationship, we automatically cancel clock drift between
+ * phone and USB audio dongle. This eliminates phase rotation at high frequencies.
+ *
+ * Hardware Connection:
+ * - Lout → TX coil + Rin (Y-cable or direct loopback)
+ * - Lin  ← RX coil
+ * - Rout → Headphones (audio feedback)
  */
 class IQDemodulatorDSP(
     private val sampleRate: Int,
     private val frequencies: List<Double>,
     private val callback: (List<ToneAnalysis>, VDIResult?) -> Unit,
-    updateRateHz: Double = 30.0,  // Default 30 Hz update rate
+    updateRateHz: Double = 5.0,  // Default 5 Hz update rate (200ms refresh, human-readable speed)
     private val enableVDI: Boolean = true,  // Enable VDI calculation
     private val enableDepth: Boolean = true  // Enable depth estimation
 ) : DspProcessor {
@@ -185,16 +240,57 @@ class IQDemodulatorDSP(
         updateInterval = calculateUpdateInterval(hz)
     }
 
+    // Second demodulator for TX reference signal
+    private val referenceDemodulator = IQDemodulator(sampleRate, frequencies)
+
     override fun processStereo(
         leftChannel: FloatArray,
         rightChannel: FloatArray,
         sampleRate: Int
     ): Pair<FloatArray, FloatArray> {
-        // Process only left channel (mono RX)
-        return Pair(processMono(leftChannel, sampleRate), leftChannel)
+        // COHERENT DEMODULATION using TX reference
+        // Left = RX signal, Right = TX reference
+        // Demodulate both with same local oscillator, then compute relative phase
+
+        // Demodulate RX signal (left channel)
+        val rxAnalysis = demodulator.analyze(leftChannel)
+
+        // Demodulate TX reference (right channel)
+        val refAnalysis = referenceDemodulator.analyze(rightChannel)
+
+        // Compute coherent phase/amplitude by comparing RX to REF
+        // This automatically cancels clock drift!
+        val coherentAnalysis = rxAnalysis.mapIndexed { i, rx ->
+            val ref = refAnalysis.getOrNull(i)
+            if (ref != null && ref.amplitude > 0.01) {  // Valid reference signal
+                // Complex multiplication: (I_rx + jQ_rx) * (I_ref - jQ_ref)* / |ref|^2
+                // This rotates RX by conjugate of REF, giving relative phase
+                val refMagSq = ref.inPhase * ref.inPhase + ref.quadrature * ref.quadrature
+
+                val coherentI = (rx.inPhase * ref.inPhase + rx.quadrature * ref.quadrature) / refMagSq
+                val coherentQ = (rx.quadrature * ref.inPhase - rx.inPhase * ref.quadrature) / refMagSq
+
+                val coherentAmp = kotlin.math.sqrt(coherentI * coherentI + coherentQ * coherentQ)
+                val coherentPhase = kotlin.math.atan2(coherentQ, coherentI)
+
+                ToneAnalysis(
+                    frequency = rx.frequency,
+                    amplitude = coherentAmp,
+                    phase = coherentPhase,
+                    inPhase = coherentI,
+                    quadrature = coherentQ
+                )
+            } else {
+                // No valid reference, fall back to absolute measurement
+                rx
+            }
+        }
+
+        // Continue with normal processing using coherent analysis
+        return Pair(processCoherentAnalysis(coherentAnalysis, sampleRate), leftChannel)
     }
 
-    override fun processMono(data: FloatArray, sampleRate: Int): FloatArray {
+    private fun processCoherentAnalysis(analysis: List<ToneAnalysis>, sampleRate: Int): FloatArray {
         // Measure actual callback rate every second
         callbackCount++
         val currentTime = System.currentTimeMillis()
@@ -202,7 +298,7 @@ class IQDemodulatorDSP(
             actualCallbackRate = callbackCount / ((currentTime - lastRateCheckTime) / 1000.0)
             android.util.Log.d("IQDemodulatorDSP",
                 "Actual callback rate: ${String.format("%.1f", actualCallbackRate)} Hz, " +
-                "Buffer size: ${data.size} samples, Latency: ${String.format("%.1f", data.size / sampleRate.toDouble() * 1000)} ms")
+                "COHERENT mode: L=RX, R=TX_Ref")
             callbackCount = 0
             lastRateCheckTime = currentTime
 
@@ -216,10 +312,7 @@ class IQDemodulatorDSP(
             }
         }
 
-        // Perform IQ demodulation on mono channel
-        val analysis = demodulator.analyze(data)
-
-        // Apply ground balance
+        // Apply ground balance to coherent analysis
         val balanced = groundBalanceManager.applyGroundBalance(analysis)
 
         // Send results to callback periodically
@@ -243,11 +336,21 @@ class IQDemodulatorDSP(
             frameCount = 0
         }
 
+        // Return empty array (not used for display)
+        return FloatArray(0)
+    }
+
+    override fun processMono(data: FloatArray, sampleRate: Int): FloatArray {
+        // Legacy mono processing - not used with coherent demodulation
+        // Just demodulate and process normally (for backwards compatibility)
+        val analysis = demodulator.analyze(data)
+        processCoherentAnalysis(analysis, sampleRate)
         return data
     }
 
     override fun reset() {
         demodulator.reset()
+        referenceDemodulator.reset()
         frameCount = 0
         callbackCount = 0
         lastRateCheckTime = System.currentTimeMillis()

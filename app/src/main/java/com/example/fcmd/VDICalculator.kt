@@ -62,6 +62,25 @@ class VDICalculator {
         val conductivityIndex = calculateConductivityIndex(analysis)
         val phaseConsistency = calculatePhaseConsistency(analysis)
 
+        // Debug logging for troubleshooting
+        android.util.Log.d("VDICalculator", String.format(
+            "VDI Debug: avgAmp=%.4f, phaseSlope=%.2f deg/kHz, conductivity=%.2f, consistency=%.3f",
+            avgAmplitude, phaseSlope, conductivityIndex, phaseConsistency
+        ))
+
+        // Log phase values for first, middle, and last frequency
+        if (analysis.size >= 3) {
+            val first = analysis.first()
+            val mid = analysis[analysis.size / 2]
+            val last = analysis.last()
+            android.util.Log.d("VDICalculator", String.format(
+                "Phase: %.0fHz=%.1f°, %.0fHz=%.1f°, %.0fHz=%.1f°",
+                first.frequency, first.phaseDegrees(),
+                mid.frequency, mid.phaseDegrees(),
+                last.frequency, last.phaseDegrees()
+            ))
+        }
+
         // Calculate raw VDI based on multiple factors
         val rawVDI = calculateRawVDI(phaseSlope, conductivityIndex, avgAmplitude)
 
@@ -73,6 +92,11 @@ class VDICalculator {
 
         // Calculate confidence based on signal strength and consistency
         val confidence = calculateConfidence(avgAmplitude, phaseConsistency)
+
+        android.util.Log.d("VDICalculator", String.format(
+            "VDI Result: vdi=%d, confidence=%.1f%%, type=%s",
+            vdi, confidence * 100, targetType
+        ))
 
         return VDIResult(vdi, confidence, targetType, phaseSlope, conductivityIndex)
     }
