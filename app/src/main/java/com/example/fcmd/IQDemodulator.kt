@@ -287,10 +287,13 @@ class IQDemodulatorDSP(
         }
 
         // Continue with normal processing using coherent analysis
-        return Pair(processCoherentAnalysis(coherentAnalysis, sampleRate), leftChannel)
+        processCoherentAnalysis(coherentAnalysis, sampleRate)
+
+        // Return input channels for display (processing is done via callback)
+        return Pair(leftChannel, rightChannel)
     }
 
-    private fun processCoherentAnalysis(analysis: List<ToneAnalysis>, sampleRate: Int): FloatArray {
+    private fun processCoherentAnalysis(analysis: List<ToneAnalysis>, sampleRate: Int) {
         // Measure actual callback rate every second
         callbackCount++
         val currentTime = System.currentTimeMillis()
@@ -335,9 +338,6 @@ class IQDemodulatorDSP(
             callback(balanced, vdiResult)
             frameCount = 0
         }
-
-        // Return empty array (not used for display)
-        return FloatArray(0)
     }
 
     override fun processMono(data: FloatArray, sampleRate: Int): FloatArray {
