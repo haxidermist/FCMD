@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCMD Patent Comparison Report - US7579839B2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        header {
+            border-bottom: 4px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .report-meta {
+            color: #95a5a6;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        h3 {
+            color: #34495e;
+            font-size: 1.4em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .info-box {
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+
+        .risk-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e9ecef;
+        }
+
+        .checkmark {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .crossmark {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border-left: 3px solid #3498db;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .section-divider {
+            border-top: 1px solid #ddd;
+            margin: 40px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .badge-low {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .conclusion {
+            background: #e7f3ff;
+            border: 2px solid #2c3e50;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .conclusion h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            h2 {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+
+            .info-box, .warning-box, .success-box, .risk-box {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        @page {
+            margin: 2cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Patent Comparison Report</h1>
+            <div class="subtitle">Field Coil Metal Detector (FCMD) vs. US Patent 7579839B2</div>
+            <div class="report-meta">
+                <strong>Report Generated:</strong> November 11, 2025<br>
+                <strong>Project:</strong> FCMD (Field Coil Metal Detector)<br>
+                <strong>Patent:</strong> US7579839B2 - Metal Detector (Minelab Electronics Pty Ltd)<br>
+                <strong>Patent Status:</strong> Active until June 29, 2026 (Expires in ~7 months)
+            </div>
+        </header>
+
+        <section id="executive-summary">
+            <h2>Executive Summary</h2>
+            <p>
+                This report provides a comprehensive technical comparison between the FCMD (Field Coil Metal Detector)
+                Android application and Minelab's US Patent 7579839B2 for a multi-frequency metal detector. Both systems
+                employ multi-frequency electromagnetic detection with synchronous demodulation, but differ fundamentally
+                in their transmit waveform approach and implementation platform.
+            </p>
+
+            <div class="info-box">
+                <strong>Key Finding:</strong> FCMD uses <strong>multi-tone sine wave transmission</strong>, while the
+                patent specifically claims <strong>switched rectangular voltage waveforms</strong>. This represents a
+                fundamental architectural difference that significantly reduces patent infringement risk.
+            </div>
+
+            <div class="warning-box">
+                <strong>Legal Disclaimer:</strong> This is a technical comparison only. For definitive legal guidance
+                regarding patent infringement, consult a qualified patent attorney specializing in electronics and
+                digital signal processing.
+            </div>
+        </section>
+
+        <section id="patent-overview">
+            <h2>1. Patent US7579839B2 Overview</h2>
+
+            <table>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Details</th>
+                </tr>
+                <tr>
+                    <td><strong>Title</strong></td>
+                    <td>Metal Detector</td>
+                </tr>
+                <tr>
+                    <td><strong>Assignee</strong></td>
+                    <td>Minelab Electronics Pty Ltd</td>
+                </tr>
+                <tr>
+                    <td><strong>Issue Date</strong></td>
+                    <td>August 25, 2009</td>
+                </tr>
+                <tr>
+                    <td><strong>Expiration Date</strong></td>
+                    <td>June 29, 2026 (~7 months remaining)</td>
+                </tr>
+                <tr>
+                    <td><strong>Status</strong></td>
+                    <td>Active</td>
+                </tr>
+            </table>
+
+            <h3>1.1 Core Innovation</h3>
+            <p>
+                The patent describes a real-time electronic metal detector that uses <strong>approximate sine-wave
+                weighted synchronous demodulation</strong> with a <strong>switched voltage signal</strong>. The key
+                innovation is the use of multi-period rectangular waveforms that are "Fourier-rich" (containing
+                multiple harmonic frequencies) combined with digital signal processing for demodulation.
+            </p>
+
+            <h3>1.2 Problem Addressed</h3>
+            <ul>
+                <li>High cost of multi-frequency analogue electronics in traditional detectors</li>
+                <li>Poor electromagnetic interference rejection in time-domain detectors</li>
+                <li>Limited simultaneous frequency detection capabilities</li>
+                <li>Lack of user-selectable frequency adjustment in practical systems</li>
+            </ul>
+
+            <h3>1.3 Technical Approach</h3>
+            <ul>
+                <li><strong>Switched voltage signal generation:</strong> Multi-period rectangular waveform applied to magnetic transmitter coil</li>
+                <li><strong>Digital signal processing:</strong> Real-time synchronous demodulation using approximate sine/cosine weighting functions</li>
+                <li><strong>Operator-selectable frequencies:</strong> Users can adjust detection frequencies via controller switches</li>
+                <li><strong>Fourier-rich waveforms:</strong> Transmit signals mathematically designed to be rich in desired frequencies</li>
+            </ul>
+
+            <h3>1.4 Specific Technologies</h3>
+            <table>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Specification</th>
+                </tr>
+                <tr>
+                    <td>Example Frequencies</td>
+                    <td>1 kHz (conductive objects), 2 kHz (coins), 16 kHz (small gold nuggets)</td>
+                </tr>
+                <tr>
+                    <td>Sampling Rate</td>
+                    <td>96,000 Hz (1/96,000 second intervals)</td>
+                </tr>
+                <tr>
+                    <td>Detection Method</td>
+                    <td>Fundamental, third, and higher harmonics via Fourier analysis</td>
+                </tr>
+                <tr>
+                    <td>Waveform Type</td>
+                    <td>Switched voltage / Rectangular waveform</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="fcmd-overview">
+            <h2>2. FCMD Project Overview</h2>
+
+            <h3>2.1 Project Description</h3>
+            <p>
+                <strong>FCMD (Field Coil Metal Detector)</strong> is a professional-grade Android metal detector
+                application that transforms a smartphone into a sophisticated electromagnetic metal detection system.
+                The project leverages the device's audio hardware for signal generation and processing, enabling metal
+                detection capabilities previously only available in dedicated commercial hardware.
+            </p>
+
+            <h3>2.2 Core Technology</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Implementation</th>
+                </tr>
+                <tr>
+                    <td>Platform</td>
+                    <td>Android 5.0+ (Kotlin 1.9)</td>
+                </tr>
+                <tr>
+                    <td>Signal Generation</td>
+                    <td>Multi-tone sinusoidal (1-24 tones, logarithmically spaced)</td>
+                </tr>
+                <tr>
+                    <td>Frequency Range</td>
+                    <td>1 kHz - 20 kHz</td>
+                </tr>
+                <tr>
+                    <td>Sample Rate</td>
+                    <td>44,100 Hz</td>
+                </tr>
+                <tr>
+                    <td>Demodulation</td>
+                    <td>IQ (In-phase/Quadrature) with single-pole IIR filtering (α=0.002)</td>
+                </tr>
+                <tr>
+                    <td>Processing</td>
+                    <td>Real-time DSP pipeline (~23 Hz callback rate)</td>
+                </tr>
+                <tr>
+                    <td>Hardware</td>
+                    <td>External TX/RX coils connected to phone audio jack</td>
+                </tr>
+            </table>
+
+            <h3>2.3 Key Features</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Multi-Frequency Detection</td>
+                    <td>1-24 tones, logarithmically spaced from 1-20 kHz</td>
+                </tr>
+                <tr>
+                    <td>VDI Classification</td>
+                    <td>0-99 scale: Ferrous (0-30), Non-ferrous conductors (30-99)</td>
+                </tr>
+                <tr>
+                    <td>Target Type Classification</td>
+                    <td>Ferrous, Low/Mid/High Conductors, Gold Range, Unknown</td>
+                </tr>
+                <tr>
+                    <td>Ground Balance</td>
+                    <td>4 modes: OFF, Manual, Auto-Tracking, Manual+Tracking</td>
+                </tr>
+                <tr>
+                    <td>Depth Estimation</td>
+                    <td>5 categories (Surface to Very Deep) with confidence scoring</td>
+                </tr>
+                <tr>
+                    <td>Coherent Demodulation</td>
+                    <td>TX reference signal for automatic clock drift cancellation</td>
+                </tr>
+                <tr>
+                    <td>Audio Feedback</td>
+                    <td>Pentatonic scale (261-1760 Hz) mapped to VDI values</td>
+                </tr>
+                <tr>
+                    <td>Bluetooth Support</td>
+                    <td>Automatic routing to Bluetooth headsets/speakers</td>
+                </tr>
+            </table>
+
+            <h3>2.4 Technical Architecture</h3>
+            <p>
+                The FCMD system comprises 18 Kotlin source files totaling approximately 5,225 lines of code. Key components include:
+            </p>
+            <ul>
+                <li><code>AudioEngine.kt</code> - Audio I/O management (398 lines)</li>
+                <li><code>IQDemodulator.kt</code> - IQ demodulation core (369 lines)</li>
+                <li><code>VDICalculator.kt</code> - Target discrimination algorithm (252 lines)</li>
+                <li><code>GroundBalanceManager.kt</code> - Ground balance implementation (313 lines)</li>
+                <li><code>DepthEstimator.kt</code> - Depth estimation with calibration (208 lines)</li>
+                <li><code>MultiToneGenerator.kt</code> - TX signal generation (119 lines)</li>
+                <li><code>AudioToneGenerator.kt</code> - Audio feedback synthesis (335 lines)</li>
+                <li><code>BluetoothAudioManager.kt</code> - Bluetooth audio routing (303 lines)</li>
+            </ul>
+        </section>
+
+        <section id="technical-comparison">
+            <h2>3. Technical Comparison</h2>
+
+            <h3>3.1 Similarities (Conceptual Overlap)</h3>
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Patent US7579839B2</th>
+                    <th>FCMD</th>
+                </tr>
+                <tr>
+                    <td>Multi-frequency detection</td>
+                    <td class="checkmark">✓ Yes (1, 2, 16 kHz examples)</td>
+                    <td class="checkmark">✓ Yes (1-24 tones, 1-20 kHz)</td>
+                </tr>
+                <tr>
+                    <td>Synchronous demodulation</td>
+                    <td class="checkmark">✓ Sine/cosine weighting</td>
+                    <td class="checkmark">✓ IQ demodulation (I=cos, Q=sin)</td>
+                </tr>
+                <tr>
+                    <td>Digital signal processing</td>
+                    <td class="checkmark">✓ Real-time DSP</td>
+                    <td class="checkmark">✓ Real-time DSP (Kotlin/Android)</td>
+                </tr>
+                <tr>
+                    <td>Operator-selectable frequencies</td>
+                    <td class="checkmark">✓ Via controller switches</td>
+                    <td class="checkmark">✓ Via UI (1-24 tones, adjustable max)</td>
+                </tr>
+                <tr>
+                    <td>Low-cost implementation</td>
+                    <td class="checkmark">✓ Digital switching vs analog</td>
+                    <td class="checkmark">✓ Smartphone audio hardware</td>
+                </tr>
+                <tr>
+                    <td>Phase & amplitude extraction</td>
+                    <td class="checkmark">✓ Yes</td>
+                    <td class="checkmark">✓ Yes (IQ components)</td>
+                </tr>
+            </table>
+
+            <h3>3.2 Critical Differences</h3>
+
+            <h4>3.2.1 Transmit Signal Type <span class="badge badge-low">KEY DIFFERENTIATOR</span></h4>
+            <div class="success-box">
+                <p><strong>Patent US7579839B2:</strong> "Switched voltage signal" — multi-period <strong>rectangular waveform</strong> rich in harmonics</p>
+                <p><strong>FCMD:</strong> <strong>Multi-tone sine waves</strong> — sum of pure sinusoids generated digitally</p>
+                <p><strong>Significance:</strong> The patent specifically claims the use of switched/rectangular waveforms. FCMD uses additive sine wave synthesis, which is fundamentally different in both generation method and spectral characteristics.</p>
+            </div>
+
+            <h4>Waveform Comparison</h4>
+            <pre><code>Patent Approach (Fourier-rich rectangular):
+     +V ┌───┐     ┌───┐
+        │   │     │   │
+    0V ─┘   └─────┘   └───
+        Rich in harmonics (1f, 3f, 5f, 7f...)
+
+FCMD Approach (Multi-tone sinusoidal):
+        Σ A_i * sin(2πf_i*t), i=1 to 24
+
+        Superposition of discrete frequencies
+        Precise control over which frequencies are present</code></pre>
+
+            <h4>3.2.2 Hardware Platform</h4>
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Patent</th>
+                    <th>FCMD</th>
+                </tr>
+                <tr>
+                    <td>Platform</td>
+                    <td>Dedicated metal detector hardware</td>
+                    <td>Android smartphone + external coils</td>
+                </tr>
+                <tr>
+                    <td>Signal Generation</td>
+                    <td>Custom digital switching circuitry</td>
+                    <td>Phone audio codec (DAC)</td>
+                </tr>
+                <tr>
+                    <td>Signal Reception</td>
+                    <td>Dedicated receiver circuit</td>
+                    <td>Phone microphone input (ADC)</td>
+                </tr>
+            </table>
+
+            <h4>3.2.3 Sampling Rate</h4>
+            <table>
+                <tr>
+                    <th>System</th>
+                    <th>Sample Rate</th>
+                    <th>Nyquist Frequency</th>
+                </tr>
+                <tr>
+                    <td>Patent US7579839B2</td>
+                    <td>96,000 Hz</td>
+                    <td>48 kHz</td>
+                </tr>
+                <tr>
+                    <td>FCMD</td>
+                    <td>44,100 Hz</td>
+                    <td>22.05 kHz (constrains max frequency to 20 kHz)</td>
+                </tr>
+            </table>
+
+            <h4>3.2.4 Feature Complexity</h4>
+            <p><strong>Patent Focus:</strong> Core multi-frequency detection mechanism with synchronous demodulation</p>
+
+            <p><strong>FCMD Additional Features</strong> (not mentioned in patent):</p>
+            <ul>
+                <li>VDI (Visual Discrimination Index) classification system</li>
+                <li>Phase slope analysis for metal type identification (deg/kHz)</li>
+                <li>Ground balance with 4 modes including auto-tracking</li>
+                <li>Depth estimation with confidence scoring</li>
+                <li><strong>Coherent demodulation</strong> using TX reference signal (clock drift cancellation)</li>
+                <li>Bluetooth audio routing</li>
+                <li>Conductivity index calculation</li>
+                <li>Real-time waveform visualization</li>
+                <li>Pentatonic audio feedback system</li>
+            </ul>
+
+            <h4>3.2.5 Demodulation Implementation</h4>
+            <table>
+                <tr>
+                    <th>System</th>
+                    <th>Method</th>
+                    <th>Details</th>
+                </tr>
+                <tr>
+                    <td>Patent</td>
+                    <td>"Approximate" sine-wave weighting</td>
+                    <td>Suggests lookup tables or simplified mathematical operations</td>
+                </tr>
+                <tr>
+                    <td>FCMD</td>
+                    <td>Precise IQ demodulation</td>
+                    <td>Single-pole IIR filtering (α=0.002, cutoff ~14 Hz)</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="risk-assessment">
+            <h2>4. Patent Infringement Risk Assessment</h2>
+
+            <h3>4.1 Low Risk Indicators</h3>
+            <div class="success-box">
+                <h4>1. Different Transmit Signal Type <span class="badge badge-low">LOW RISK</span></h4>
+                <p>
+                    <strong>Patent Claim:</strong> Rectangular switched voltage waveforms<br>
+                    <strong>FCMD Implementation:</strong> Multi-tone sinusoidal waveforms<br>
+                    <strong>Assessment:</strong> This is a fundamental architectural difference. The patent specifically
+                    describes and claims rectangular waveforms that are "Fourier-rich" in harmonics. FCMD's approach of
+                    digitally synthesizing discrete sine tones is conceptually and mathematically distinct.
+                </p>
+            </div>
+
+            <div class="success-box">
+                <h4>2. Patent Expiration Imminent <span class="badge badge-low">LOW RISK</span></h4>
+                <p>
+                    <strong>Expiration Date:</strong> June 29, 2026 (less than 7 months remaining)<br>
+                    <strong>Assessment:</strong> Even if there were infringement concerns, the patent will enter the
+                    public domain soon, allowing unrestricted use of the claimed invention.
+                </p>
+            </div>
+
+            <div class="success-box">
+                <h4>3. Different Application Domain <span class="badge badge-low">LOW RISK</span></h4>
+                <p>
+                    <strong>Patent Context:</strong> Dedicated hardware metal detector<br>
+                    <strong>FCMD Context:</strong> Smartphone software application<br>
+                    <strong>Assessment:</strong> While this doesn't eliminate infringement risk (patents can cover
+                    methods regardless of implementation), the substantial differences in platform and implementation
+                    reduce overlap.
+                </p>
+            </div>
+
+            <div class="success-box">
+                <h4>4. Synchronous Demodulation is Not Novel <span class="badge badge-low">LOW RISK</span></h4>
+                <p>
+                    <strong>Context:</strong> IQ demodulation is a fundamental DSP technique<br>
+                    <strong>Assessment:</strong> Synchronous demodulation predates this patent and is used extensively
+                    in radio, radar, sonar, and telecommunications. The patent's claims are likely limited to the
+                    specific combination with switched rectangular waveforms, not the demodulation technique itself.
+                </p>
+            </div>
+
+            <h3>4.2 Potential Overlap Areas</h3>
+            <div class="warning-box">
+                <h4>Areas of Conceptual Similarity <span class="badge badge-medium">MEDIUM CONCERN</span></h4>
+                <ol>
+                    <li><strong>Multi-frequency simultaneous detection:</strong> Both systems detect multiple frequencies concurrently</li>
+                    <li><strong>Synchronous demodulation:</strong> Both use phase-coherent mixing (though with different waveforms)</li>
+                    <li><strong>Operator frequency selection:</strong> Both allow user-selectable frequency configurations</li>
+                </ol>
+                <p>
+                    <strong>Assessment:</strong> These similarities exist at a high conceptual level but differ in
+                    implementation details. Multi-frequency detection and synchronous demodulation are well-established
+                    techniques in signal processing. The key question is whether the patent's claims are broad enough
+                    to cover any multi-frequency metal detector using synchronous demodulation, or narrowly limited to
+                    the specific switched rectangular waveform approach.
+                </p>
+            </div>
+
+            <h3>4.3 FCMD's Unique Contributions</h3>
+            <p>Features implemented in FCMD that are <strong>not described in Patent US7579839B2:</strong></p>
+            <ul>
+                <li><strong>Coherent demodulation with TX reference:</strong> Automatic clock drift compensation between phone and USB audio dongles</li>
+                <li><strong>VDI classification algorithm:</strong> Phase slope-based metal discrimination (degrees/kHz)</li>
+                <li><strong>Conductivity index calculation:</strong> High/low frequency amplitude ratio analysis</li>
+                <li><strong>Categorical depth estimation:</strong> Five-level depth classification with confidence scoring</li>
+                <li><strong>Smartphone-based implementation:</strong> Novel use of mobile audio codec for metal detection</li>
+                <li><strong>Logarithmic frequency spacing:</strong> Optimized frequency distribution for target discrimination</li>
+                <li><strong>Ground balance auto-tracking:</strong> Adaptive baseline compensation with freeze-on-target</li>
+                <li><strong>Bluetooth audio routing:</strong> Wireless headset integration</li>
+                <li><strong>Real-time performance monitoring:</strong> CPU usage, latency, and buffer statistics</li>
+            </ul>
+
+            <h3>4.4 Overall Risk Assessment</h3>
+            <div class="conclusion">
+                <h3>Risk Level: LOW <span class="badge badge-low">LOW RISK</span></h3>
+                <p>
+                    Based on this technical analysis, the patent infringement risk appears <strong>LOW</strong> due to:
+                </p>
+                <ul>
+                    <li>Fundamental difference in transmit waveform type (sine vs. rectangular)</li>
+                    <li>Imminent patent expiration (June 2026)</li>
+                    <li>Different implementation platform and approach</li>
+                    <li>Significant additional innovations not covered by the patent</li>
+                </ul>
+                <p>
+                    However, <strong>this is not legal advice</strong>. For definitive guidance, consult a patent
+                    attorney who can:
+                </p>
+                <ol>
+                    <li>Analyze the full claims language of US7579839B2</li>
+                    <li>Review Minelab's patent portfolio for related patents with broader claims</li>
+                    <li>Assess whether the claims cover the method regardless of waveform type</li>
+                    <li>Evaluate doctrine of equivalents considerations</li>
+                    <li>Provide jurisdiction-specific legal guidance</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="technical-distinctions">
+            <h2>5. Detailed Technical Distinctions</h2>
+
+            <h3>5.1 Signal Generation Comparison</h3>
+            <table>
+                <tr>
+                    <th>Characteristic</th>
+                    <th>Patent US7579839B2</th>
+                    <th>FCMD</th>
+                </tr>
+                <tr>
+                    <td>Waveform Shape</td>
+                    <td>Rectangular (square wave variants)</td>
+                    <td>Sinusoidal (pure tones)</td>
+                </tr>
+                <tr>
+                    <td>Generation Method</td>
+                    <td>Voltage switching circuit</td>
+                    <td>Digital synthesis (DAC)</td>
+                </tr>
+                <tr>
+                    <td>Harmonic Content</td>
+                    <td>Natural harmonics from square wave (1f, 3f, 5f, 7f...)</td>
+                    <td>Only explicitly programmed frequencies</td>
+                </tr>
+                <tr>
+                    <td>Frequency Control</td>
+                    <td>Switching timing determines harmonic structure</td>
+                    <td>Direct frequency synthesis for each tone</td>
+                </tr>
+                <tr>
+                    <td>Spectral Purity</td>
+                    <td>Broad spectrum with many harmonics</td>
+                    <td>Discrete tones at specific frequencies</td>
+                </tr>
+            </table>
+
+            <h3>5.2 FCMD's IQ Demodulation Algorithm</h3>
+            <pre><code>For each frequency f:
+1. Phase increment: φ_inc = 2π × f / sample_rate
+
+2. For each audio sample x[n]:
+   - I[n] = x[n] × cos(φ)  // In-phase component
+   - Q[n] = -x[n] × sin(φ) // Quadrature component
+   - φ = φ + φ_inc
+
+3. Single-Pole IIR Low-Pass Filter (α=0.002):
+   - I_filtered = 0.002 × I + 0.998 × I_filtered
+   - Q_filtered = 0.002 × Q + 0.998 × Q_filtered
+   - Cutoff ≈ 14 Hz (very stable, integrates noise)
+
+4. Output per buffer (~43 ms):
+   - Amplitude = √(I² + Q²) × 2.0  // ×2 for mixing loss compensation
+   - Phase = atan2(Q, I)</code></pre>
+
+            <h3>5.3 FCMD's Phase Slope Discrimination</h3>
+            <p>This is a unique feature not mentioned in the patent:</p>
+            <pre><code>Phase Slope = (phase_high - phase_low) / (frequency_high - frequency_low)
+
+Interpretation:
+- Ferrous metals: slope &lt; -3.0 deg/kHz (strong negative slope)
+  → VDI = 30 × (1.0 - slope / -10.0)  // Maps to 0-30 range
+
+- Non-ferrous: flat slope, use conductivity index
+  → VDI = 30 + conductivity × 69  // Maps to 30-99 range
+
+Conductivity Index:
+- Ratio = amplitude(high freq) / amplitude(low freq)
+- Normalized = clamp(ratio, 0.0, 2.0) / 2.0
+- High conductors (Cu, Ag): ratio &gt; 1.0
+- Low conductors (Al, foil): ratio &lt; 1.0</code></pre>
+
+            <h3>5.4 FCMD's Coherent Demodulation</h3>
+            <p>A recent innovation addressing clock drift between phone and USB audio dongles:</p>
+            <ul>
+                <li><strong>Problem:</strong> Phone DAC and external USB ADC may have slightly different clock rates</li>
+                <li><strong>Solution:</strong> Loop TX signal back to right channel of microphone input</li>
+                <li><strong>Method:</strong> Demodulate both RX signal and TX reference, compute relative phase</li>
+                <li><strong>Benefit:</strong> Automatic cancellation of clock drift errors, improved phase stability</li>
+            </ul>
+
+            <h3>5.5 Ground Balance Implementation</h3>
+            <table>
+                <tr>
+                    <th>Mode</th>
+                    <th>Description</th>
+                    <th>Algorithm</th>
+                </tr>
+                <tr>
+                    <td>OFF</td>
+                    <td>No ground balance applied</td>
+                    <td>Use raw RX signal</td>
+                </tr>
+                <tr>
+                    <td>Manual</td>
+                    <td>User "pumps" coil 10 times</td>
+                    <td>Average 10 samples, store as baseline, subtract from future readings</td>
+                </tr>
+                <tr>
+                    <td>Auto-Tracking</td>
+                    <td>Continuously adapts to soil</td>
+                    <td>Slow IIR filter (α=0.0005); freezes when target detected (amplitude &gt; 0.3)</td>
+                </tr>
+                <tr>
+                    <td>Manual+Tracking</td>
+                    <td>Start from manual, then track</td>
+                    <td>Use manual baseline as starting point, then apply auto-tracking</td>
+                </tr>
+            </table>
+            <p><strong>User Offset:</strong> ±50 adjustment range for fine-tuning the null point</p>
+        </section>
+
+        <section id="conclusions">
+            <h2>6. Conclusions and Recommendations</h2>
+
+            <h3>6.1 Summary of Findings</h3>
+            <p>
+                This technical comparison reveals that while FCMD and Patent US7579839B2 share the high-level concept
+                of multi-frequency synchronous demodulation for metal detection, they differ fundamentally in their
+                implementation approach:
+            </p>
+
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Similarity Level</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Transmit waveform</td>
+                    <td class="crossmark">✗ Different</td>
+                    <td>Rectangular (patent) vs. Sinusoidal (FCMD)</td>
+                </tr>
+                <tr>
+                    <td>Hardware platform</td>
+                    <td class="crossmark">✗ Different</td>
+                    <td>Dedicated detector vs. Smartphone</td>
+                </tr>
+                <tr>
+                    <td>Multi-frequency concept</td>
+                    <td class="checkmark">✓ Similar</td>
+                    <td>Both use multiple simultaneous frequencies</td>
+                </tr>
+                <tr>
+                    <td>Synchronous demodulation</td>
+                    <td class="checkmark">✓ Similar</td>
+                    <td>Standard DSP technique, implementation differs</td>
+                </tr>
+                <tr>
+                    <td>Feature set</td>
+                    <td class="crossmark">✗ Different</td>
+                    <td>FCMD has many additional unique features</td>
+                </tr>
+            </table>
+
+            <h3>6.2 Patent Infringement Risk</h3>
+            <div class="success-box">
+                <h4>Overall Assessment: LOW RISK <span class="badge badge-low">LOW RISK</span></h4>
+                <p><strong>Primary Risk Mitigation Factors:</strong></p>
+                <ul>
+                    <li><strong>Waveform difference:</strong> Sine waves vs. rectangular is a fundamental distinction</li>
+                    <li><strong>Expiration timeline:</strong> Patent expires June 29, 2026 (~7 months)</li>
+                    <li><strong>Standard techniques:</strong> Synchronous demodulation is well-established prior art</li>
+                    <li><strong>Platform distinction:</strong> Smartphone implementation vs. dedicated hardware</li>
+                </ul>
+            </div>
+
+            <h3>6.3 Recommendations</h3>
+
+            <div class="info-box">
+                <h4>1. Legal Consultation</h4>
+                <p>
+                    Engage a patent attorney specializing in electronics/DSP to:
+                </p>
+                <ul>
+                    <li>Review the full claims language of US7579839B2</li>
+                    <li>Conduct a freedom-to-operate (FTO) analysis</li>
+                    <li>Search for related Minelab patents with potentially broader claims</li>
+                    <li>Assess international patent implications if distributing globally</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>2. Patent Expiration Strategy</h4>
+                <p>
+                    Given the patent expires in ~7 months (June 2026):
+                </p>
+                <ul>
+                    <li>Consider timing of commercial launch relative to expiration date</li>
+                    <li>Monitor for any patent term extensions or continuations</li>
+                    <li>After expiration, all claims enter public domain</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>3. Documentation</h4>
+                <p>
+                    Maintain clear documentation of FCMD's unique innovations:
+                </p>
+                <ul>
+                    <li>Coherent demodulation with TX reference</li>
+                    <li>VDI phase slope algorithm</li>
+                    <li>Smartphone-based architecture</li>
+                    <li>Multi-tone sinusoidal synthesis approach</li>
+                </ul>
+                <p>
+                    This demonstrates independent development and novel contributions to the field.
+                </p>
+            </div>
+
+            <div class="info-box">
+                <h4>4. Prior Art Research</h4>
+                <p>
+                    Investigate prior art for multi-frequency metal detection and synchronous demodulation:
+                </p>
+                <ul>
+                    <li>Academic papers on metal detection algorithms</li>
+                    <li>Earlier patents in the metal detection field</li>
+                    <li>Radio/radar/sonar DSP techniques (IQ demodulation origins)</li>
+                </ul>
+                <p>
+                    This can help establish that core techniques predate the Minelab patent.
+                </p>
+            </div>
+
+            <h3>6.4 Final Statement</h3>
+            <div class="conclusion">
+                <h3>Technical Conclusion</h3>
+                <p>
+                    FCMD represents a novel implementation of multi-frequency metal detection using smartphone audio
+                    hardware and multi-tone sinusoidal transmission. While it shares conceptual similarities with
+                    Patent US7579839B2 in using multi-frequency detection and synchronous demodulation (both
+                    well-established techniques in signal processing), it differs fundamentally in:
+                </p>
+                <ul>
+                    <li>Transmit waveform type (sine vs. rectangular)</li>
+                    <li>Implementation platform (smartphone vs. dedicated hardware)</li>
+                    <li>Feature set (VDI, phase slope analysis, coherent demodulation, etc.)</li>
+                </ul>
+                <p>
+                    These differences, combined with the patent's imminent expiration, suggest low infringement risk.
+                    However, <strong>this technical analysis does not constitute legal advice</strong>. Consultation
+                    with a qualified patent attorney is strongly recommended for authoritative legal guidance.
+                </p>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <footer style="text-align: center; color: #7f8c8d; font-size: 0.9em; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p><strong>Report Generated:</strong> November 11, 2025</p>
+            <p><strong>Project:</strong> FCMD (Field Coil Metal Detector)</p>
+            <p><strong>Disclaimer:</strong> This report is for informational purposes only and does not constitute legal advice.</p>
+        </footer>
+    </div>
+</body>
+</html>
